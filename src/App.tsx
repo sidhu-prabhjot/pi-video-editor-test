@@ -1,8 +1,9 @@
 import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
 import { Switch } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { CustomRender0, CustomRender1 } from './custom';
+import SortableList from './Sortable';
 import './index.less';
 import TimelinePlayer from './player';
 import audioControl from './audioControl';
@@ -14,6 +15,7 @@ import lottieControl from './lottieControl';
 const scaleWidth = 160;
 const scale = 5;
 const startLeft = 20;
+
 
 interface CustomTimelineAction extends TimelineAction {
   data: {
@@ -90,7 +92,7 @@ const mockData: CusTomTimelineRow[] = [
           src: '/lottie/lottie1/data.json',
           name: 'Hello',
           subtitleNumber: 1,
-          metaData: null,
+          metaData: "",
         },
       },
       {
@@ -102,7 +104,7 @@ const mockData: CusTomTimelineRow[] = [
           src: '/lottie/lottie1/data.json',
           name: 'World',
           subtitleNumber: 2,
-          metaData: null,
+          metaData: "",
         },
       },
     ],
@@ -120,6 +122,7 @@ const App = () => {
   const playerPanel = useRef<HTMLDivElement>(null);
   const autoScrollWhenPlay = useRef<boolean>(true);
 
+
   const addSubtitle = () => {
     const subtitleObject = {
       id: 'action5',
@@ -130,7 +133,7 @@ const App = () => {
         src: '/lottie/lottie1/data.json',
         name: 'My Name is Prabhjot',
         subtitleNumber: 3,
-        metaData: null,
+        metaData: "",
       }
     };
     const tempData = cloneDeep(defaultEditorData);
@@ -141,45 +144,56 @@ const App = () => {
   console.log(timelineState);
 
   return (
-    <div className="timeline-editor-engine">
-      <div>
-        <button onClick={() => addSubtitle()}>
-          Click To Add Subtitle: "New Subtitle"
-        </button>
+    <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
+      <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
+        <div className="scroll-container" style={{height:"100%", flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#8A9A5B"}}>
+          <p>Scroll Container</p>
+          <SortableList data={data} />
+        </div>
+        <div className="video-container" style={{height:"100%", flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#7393B3"}}>
+          <p>Video Container</p>
+        </div>
       </div>
-      <div className="player-config">
-        <Switch
-          checkedChildren="开启运行时自动滚动"
-          unCheckedChildren="禁用运行时自动滚动"
-          defaultChecked={autoScrollWhenPlay.current}
-          onChange={(e) => (autoScrollWhenPlay.current = e)}
-          style={{ marginBottom: 20 }}
+      <div className="timeline-editor-engine main-row-2" style={{height:"30vh", backgroundColor:"#808080", display:"flex", flexDirection:"column"}}>
+        <div>
+          <button onClick={() => addSubtitle()}>
+            Click To Add Subtitle: "New Subtitle"
+          </button>
+        </div>
+        <div className="player-config">
+          <Switch
+            checkedChildren="开启运行时自动滚动"
+            unCheckedChildren="禁用运行时自动滚动"
+            defaultChecked={autoScrollWhenPlay.current}
+            onChange={(e) => (autoScrollWhenPlay.current = e)}
+            style={{ marginBottom: 20 }}
+          />
+        </div>
+        <div className="player-panel" id="player-ground-1" ref={playerPanel}></div>
+        <TimelinePlayer timelineState={timelineState} autoScrollWhenPlay={autoScrollWhenPlay} />
+        <Timeline
+          style={{width:"100%", height: "100px"}}
+          scale={scale}
+          scaleWidth={scaleWidth}
+          startLeft={startLeft}
+          autoScroll={true}
+          ref={timelineState}
+          editorData={data}
+          effects={mockEffect}
+          onChange={(data) => {
+            console.log("data changed: ", data);
+            setData(data as CusTomTimelineRow[]);
+          }}
+          getActionRender={(action, row) => {
+            if (action.effectId === 'effect0') {
+              return <CustomRender0 action={action as CustomTimelineAction} row={row as CusTomTimelineRow} />;
+            } else if (action.effectId === 'effect1') {
+              return <CustomRender1 action={action as CustomTimelineAction} row={row as CusTomTimelineRow} />;
+            }
+          }}
+          autoReRender={true}
         />
       </div>
-      <div className="player-panel" id="player-ground-1" ref={playerPanel}></div>
-      <TimelinePlayer timelineState={timelineState} autoScrollWhenPlay={autoScrollWhenPlay} />
-      <Timeline
-        style={{width:"100%", height: "100px"}}
-        scale={scale}
-        scaleWidth={scaleWidth}
-        startLeft={startLeft}
-        autoScroll={true}
-        ref={timelineState}
-        editorData={data}
-        effects={mockEffect}
-        onChange={(data) => {
-          setData(data as CusTomTimelineRow[]);
-          console.log("data changed: ", data);
-        }}
-        getActionRender={(action, row) => {
-          if (action.effectId === 'effect0') {
-            return <CustomRender0 action={action as CustomTimelineAction} row={row as CusTomTimelineRow} />;
-          } else if (action.effectId === 'effect1') {
-            return <CustomRender1 action={action as CustomTimelineAction} row={row as CusTomTimelineRow} />;
-          }
-        }}
-        autoReRender={true}
-      />
     </div>
   );
 };

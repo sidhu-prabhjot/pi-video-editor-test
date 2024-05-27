@@ -81,7 +81,7 @@ export const mockData: CusTomTimelineRow[] = [
           src: '/lottie/lottie1/data.json',
           name: 'Hello',
           subtitleNumber: 1,
-          metaData: null,
+          metaData: "",
         },
       },
       {
@@ -93,7 +93,7 @@ export const mockData: CusTomTimelineRow[] = [
           src: '/lottie/lottie1/data.json',
           name: 'World',
           subtitleNumber: 2,
-          metaData: null,
+          metaData: "",
         },
       },
     ],
