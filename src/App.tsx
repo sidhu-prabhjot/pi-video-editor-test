@@ -9,6 +9,8 @@ import './index.less';
 import TimelinePlayer from './player';
 import audioControl from './audioControl';
 import lottieControl from './lottieControl';
+import {parseVTTFile} from './Parser';
+import { parse } from 'path';
 
 
 /////////////////////////////////////////////////////////////////////////////data control
@@ -83,37 +85,7 @@ const mockEffect: Record<string, TimelineEffect> = {
 };
 
 //all the data that exists in a SINGLE timeline row
-const mockData: CusTomTimelineRow[] = [
-  {
-    id: '0',
-    actions: [
-      {
-        id: 'action0',
-        start: 0,
-        end: 20,
-        effectId: 'effect0',
-        data: {
-          src: '/lottie/lottie1/data.json',
-          name: 'Hello',
-          subtitleNumber: 1,
-          metaData: "",
-        },
-      },
-      {
-        id: 'action1',
-        start: 22,
-        end: 24,
-        effectId: 'effect1',
-        data: {
-          src: '/lottie/lottie1/data.json',
-          name: 'World',
-          subtitleNumber: 2,
-          metaData: "",
-        },
-      },
-    ],
-  },
-];  
+const mockData: CusTomTimelineRow[] = parseVTTFile();
 
 
 
