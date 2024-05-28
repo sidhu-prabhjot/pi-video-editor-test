@@ -87,8 +87,6 @@ const mockEffect: Record<string, TimelineEffect> = {
 //all the data that exists in a SINGLE timeline row
 const mockData: CusTomTimelineRow[] = parseVTTFile();
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 const defaultEditorData = cloneDeep(mockData);

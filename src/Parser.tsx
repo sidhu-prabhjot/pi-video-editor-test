@@ -1,4 +1,3 @@
-import {useRef} from 'react';
 import {WebVTTParser} from 'webvtt-parser';
 import {TimelineAction, TimelineRow} from '@xzdarcy/react-timeline-editor';
 
@@ -47,7 +46,7 @@ export const parseVTTFile = () => {
             id: `action${idRef}`,
             start: data.startTime,
             end: data.endTime,
-            effectId: 'effect0',
+            effectId: 'effect1',
             data: {
                 src: '/lottie/lottie1/data.json',
                 name: `${data.text}`,
