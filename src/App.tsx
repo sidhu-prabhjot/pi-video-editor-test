@@ -1,8 +1,9 @@
 import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
 import { Switch } from 'antd';
 import { cloneDeep } from 'lodash';
+import _remove from 'lodash/remove';
 import React, { useRef, useState, useEffect } from 'react';
-import { CustomRender0, CustomRender1 } from './custom';
+import { CustomRender0, CustomRender1, CustomRender2 } from './custom';
 import SortableList from './Sortable';
 import './index.less';
 import TimelinePlayer from './player';
@@ -16,7 +17,7 @@ const scaleWidth = 160;
 const scale = 5;
 const startLeft = 20;
 
-
+//defines the properties of a subtitle object in the timeline
 interface CustomTimelineAction extends TimelineAction {
   data: {
     src: string;
@@ -26,10 +27,12 @@ interface CustomTimelineAction extends TimelineAction {
   };
 }
 
+//the data structure for an entire row in the timeline
 interface CusTomTimelineRow extends TimelineRow {
   actions: CustomTimelineAction[];
 }
 
+//defines the properties of the timeline and how it will operate. Need a definition for each effect id
 const mockEffect: Record<string, TimelineEffect> = {
   effect0: {
     id: 'effect0',
@@ -79,12 +82,13 @@ const mockEffect: Record<string, TimelineEffect> = {
   },
 };
 
+//all the data that exists in a SINGLE timeline row
 const mockData: CusTomTimelineRow[] = [
   {
     id: '0',
     actions: [
       {
-        id: 'action3',
+        id: 'action0',
         start: 0,
         end: 20,
         effectId: 'effect0',
@@ -96,7 +100,7 @@ const mockData: CusTomTimelineRow[] = [
         },
       },
       {
-        id: 'action4',
+        id: 'action1',
         start: 22,
         end: 24,
         effectId: 'effect1',
@@ -111,16 +115,88 @@ const mockData: CusTomTimelineRow[] = [
   },
 ];  
 
-/////////////////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
 const defaultEditorData = cloneDeep(mockData);
 
 const App = () => {
 
   const [data, setData] = useState(defaultEditorData);
+  const [list, setList] = useState([]);
+
+  //the current state of the timeline and its operations (can be manipulated)
   const timelineState = useRef<TimelineState>();
   const playerPanel = useRef<HTMLDivElement>(null);
   const autoScrollWhenPlay = useRef<boolean>(true);
+  const idRef = useRef(data[0].actions.length);
+
+  //////////////////////////////////////////////////////// managing sidelist
+
+  //deleting from list
+  const deleteSubtitle = (id: String) => {
+
+    const tempArray = data[0].actions;
+
+    let results = _remove(tempArray, (subtitle) => {
+      return subtitle.id != id;
+    });
+
+    data[0].actions = [...results];
+
+    setData([...data]);
+
+  }
+
+  const insertSubtitle = (previousEndTime: number) => {
+
+    setData (() => {  
+      const newAction : CustomTimelineAction = {   
+        id : `action${idRef.current++}` , 
+        start : previousEndTime + 0.5,
+        end : previousEndTime + 1.5 , 
+        effectId : "effect1",
+        data: {
+          src: '/lottie/lottie1/data.json',
+          name: 'New Subtitle',
+          subtitleNumber: 0,
+          metaData: '',
+        } 
+      }
+      let tempArray = cloneDeep(data);
+      for (let i = 0; i < tempArray[0].actions.length; i++) {
+          if (newAction.start <= tempArray[0].actions[i].start) {
+              tempArray[0].actions.splice(i, 0, newAction);
+              break;
+          }
+      }
+      if (tempArray[0].actions.length === 0 || newAction.start > tempArray[0].actions[tempArray[0].actions.length - 1].start) {
+          tempArray[0].actions.push(newAction); 
+      }
+      return [...tempArray];              
+    });
+
+  }
+
+  //building list to view
+  const buildList = () => {
+
+    console.log("data to list: ", data[0].actions);
+  
+    setList(data[0].actions.map((subtitleObject) => {
+      let listItem = <li key={subtitleObject.id}><div onClick={() => deleteSubtitle(subtitleObject.id)}>(-)</div>{subtitleObject.data.name}<div onClick={() => insertSubtitle(subtitleObject.end)}>(+)</div></li>
+      return listItem;
+    }));
+  
+  }
+
+  /////////////////////////////////////////////////////////////////
+
+  useEffect(() => {
+    console.log("current dataset: ", data);
+    buildList();
+  }, [data])
 
 
   const addSubtitle = () => {
@@ -141,14 +217,14 @@ const App = () => {
     setData(tempData);
   }
 
-  console.log(timelineState);
-
   return (
     <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
         <div className="scroll-container" style={{height:"100%", flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#8A9A5B"}}>
           <p>Scroll Container</p>
-          <SortableList data={data} />
+          <ul>
+            {list}
+          </ul>
         </div>
         <div className="video-container" style={{height:"100%", flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#7393B3"}}>
           <p>Video Container</p>
@@ -189,7 +265,37 @@ const App = () => {
               return <CustomRender0 action={action as CustomTimelineAction} row={row as CusTomTimelineRow} />;
             } else if (action.effectId === 'effect1') {
               return <CustomRender1 action={action as CustomTimelineAction} row={row as CusTomTimelineRow} />;
+            } else if (action.effectId === 'effect2') {
+              return <CustomRender2 action={action as CustomTimelineAction} row={row as CusTomTimelineRow} />;
             }
+          }}
+          onDoubleClickRow = { ( e , { row , time } ) => {   
+            setData (( pre ) => {  
+              const rowIndex = pre.findIndex ( item => item.id === row.id ) ; 
+              const newAction : CustomTimelineAction = {   
+                id : `action${idRef.current++}` , 
+                start : time ,
+                end : time + 0.5 , 
+                effectId : "effect1",
+                data: {
+                  src: '/lottie/lottie1/data.json',
+                  name: 'New Subtitle',
+                  subtitleNumber: 0,
+                  metaData: '',
+                } 
+              }
+              let tempArray = cloneDeep(data);
+              for (let i = 0; i < tempArray[0].actions.length; i++) {
+                  if (newAction.start <= tempArray[0].actions[i].start) {
+                      tempArray[0].actions.splice(i, 0, newAction);
+                      break;
+                  }
+              }
+              if (tempArray[0].actions.length === 0 || newAction.start > tempArray[0].actions[tempArray[0].actions.length - 1].start) {
+                  tempArray[0].actions.push(newAction); 
+              }
+              return [...tempArray];              
+            });
           }}
           autoReRender={true}
         />

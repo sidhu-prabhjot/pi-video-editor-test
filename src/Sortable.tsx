@@ -1,51 +1,65 @@
 import React, { useState, useEffect } from "react";
 import { ReactSortable } from "react-sortablejs";
-import {TimelineRow, TimelineAction} from '@xzdarcy/react-timeline-editor';
-
+import { TimelineRow, TimelineAction } from "@xzdarcy/react-timeline-editor";
 
 interface CustomTimelineAction extends TimelineAction {
-    data: {
-      src: string;
-      name: string;
-      subtitleNumber: number;
-      metaData: string;
-    };
-  }
+  data: {
+    src: string;
+    name: string;
+    subtitleNumber: number;
+    metaData: string;
+  };
+}
 
-interface CusTomTimelineRow extends TimelineRow {
-    actions: CustomTimelineAction[];
-  }
+interface CustomTimelineRow extends TimelineRow {
+  actions: CustomTimelineAction[];
+}
+
+interface ActionItem {
+  data: {
+    metaData: string;
+    name: string;
+    src: string;
+    subtitleNumber: number;
+  };
+  effectId: string;
+  end: number;
+  id: string;
+  start: number;
+}
 
 interface Item {
-    id: number;
-    name: string;
+  actions: Array<ActionItem>;
+  id: string;
 }
 
 interface Props {
-    data: CusTomTimelineRow[];
+  data: CustomTimelineRow[];
 }
 
 const SortableList: React.FC<Props> = ({ data }) => {
-    const [state, setState] = useState<CusTomTimelineRow[]>([...data]);
+  const [state, setState] = useState<CustomTimelineAction[]>([]);
 
-    useEffect(() => {
-        console.log("SortableList received new data:", data[0]);
-        setState([...data]);
-    }, [data]);
+  useEffect(() => {
+    if (data.length > 0) {
+      console.log("SortableList received new data:", data[0]);
+      setState([...data[0].actions]);
+    }
+  }, [data]);
 
-    const handleSort = (newState: CusTomTimelineRow[]) => {
-        setState(newState);
-    };
+  const handleSort = (newState: CustomTimelineAction[]) => {
+    setState(newState);
+  };
 
-    console.log("SortableList state:", state);
+  console.log("SortableList state:", state);
 
-    return (
-        <ReactSortable list={state} setList={handleSort}>
-            {state[0].actions.map((item) => (
-                <div key={item.id}>{item.data.name}</div>
-            ))}
-        </ReactSortable>
-    );
+  return (
+    <ReactSortable list={state} setList={handleSort}>
+      {state.map((item) => (
+        <div key={item.id}>{item.data.name}</div>
+      ))}
+    </ReactSortable>
+  );
 };
 
 export default SortableList;

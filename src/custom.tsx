@@ -16,3 +16,11 @@ export const CustomRender1: FC<{ action: CustomTimelineAction; row: CusTomTimeli
     </div>
   );
 };
+
+export const CustomRender2: FC<{ action: CustomTimelineAction; row: CusTomTimelineRow }> = ({ action, row }) => {
+  return (
+    <div className={'effect2'}>
+      <div className={`effect2-text`}>{`播放动画: ${action.data.name}`}</div>
+    </div>
+  );
+};
