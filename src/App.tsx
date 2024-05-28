@@ -149,6 +149,36 @@ const App = () => {
 
   }
 
+  
+  const resolveOverlaps = () => {
+
+    let tempData = cloneDeep(data);
+    let actions = tempData[0].actions;
+
+    for(let i = 0; i < actions.length - 1; i++) {
+      let current = actions[i];
+      let next = actions[i+1];
+
+      console.log("current.end: ", current.end);
+      console.log("next.start: ", next.start);
+
+      if(current.end >= next.start) {
+        let difference = next.end - next.start;
+        next.start = current.end + 0.1;
+        next.end = next.start + difference;
+        console.log("tended to overlap");
+      } else {
+        console.log("no overlap");
+      }
+
+    }
+
+    tempData[0].actions = [...actions];
+    setData([...tempData]);
+
+
+  }
+
   const insertSubtitle = (previousEndTime: number) => {
 
     setData (() => {  
@@ -235,6 +265,7 @@ const App = () => {
           <button onClick={() => addSubtitle()}>
             Click To Add Subtitle: "New Subtitle"
           </button>
+          <button onClick={() => resolveOverlaps()}>Resolve Overlaps</button>
         </div>
         <div className="player-config">
           <Switch
