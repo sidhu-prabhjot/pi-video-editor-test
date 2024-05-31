@@ -20,8 +20,10 @@
     "lottie-web": "^5.12.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-drag-drop-files": "^2.3.10",
     "react-modal": "^3.16.1",
     "react-scripts": "5.0.1",
+    "react-scroll-into-view": "^2.1.2",
     "react-sortablejs": "^6.1.4",
     "sortablejs": "^1.15.2",
     "typescript": "^4.9.5",
@@ -55,6 +57,7 @@
   },
   "devDependencies": {
     "@types/howler": "^2.2.11",
-    "@types/sortablejs": "^1.15.8"
+    "@types/sortablejs": "^1.15.8",
+    "video.js": "^8.12.0"
   }
 }
