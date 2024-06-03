@@ -10,7 +10,12 @@ interface CustomTimelineAction extends TimelineAction {
         src: string;
         name: string;
         subtitleNumber: number;
-        metaData: string;
+        alignment: string;
+        direction: string;
+        lineAlign: string;
+        positionAlign: string;
+        size: number;
+        textPosition: string;
     };
 }
 
@@ -47,7 +52,12 @@ export const parseVTTFile = (fileData, idMap) => {
                 src: '/audio/audio.mp3',
                 name: `${data.text}`,
                 subtitleNumber: Number(data.id),
-                metaData: "",
+                alignment: data.alignment,
+                direction: data.direction,
+                lineAlign: data.lineAlign,
+                positionAlign: data.positionAlign,
+                size: data.size,
+                textPosition: data.textPosition,
             },
         }
         idMap[idRef] = "";

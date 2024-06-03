@@ -14,6 +14,9 @@ import videojs from 'video.js';
 import Subtitle from './Subtitle';
 import SingleInputForm from './SingleInputForm';
 import DragDrop from './DragDrop';
+import TimeInput from './TimeInput';
+import EndInput from './EndInput';
+import SideListSearch from './SideListSearch';
 
 //Modal styling
 const customStyles = {
@@ -39,7 +42,12 @@ interface CustomTimelineAction extends TimelineAction {
     src: string;
     name: string;
     subtitleNumber: number;
-    metaData: string;
+    alignment: string;
+    direction: string;
+    lineAlign: string;
+    positionAlign: string;
+    size: number;
+    textPosition: string;
   };
 }
 
@@ -105,6 +113,9 @@ const App = () => {
 
   //handling link inserts for the video
   const [linkInputValue, setLinkInputValue] = useState("");
+
+  //search bar related states
+  const [actionData, setActionData] = useState([]);
 
   ///////////////////////////////////////////////////////// videojs player
 
@@ -174,6 +185,7 @@ const App = () => {
     data[0].actions = [...results];
 
     setData([...data]);
+    verifySubtitles();
 
   }
 
@@ -183,46 +195,57 @@ const App = () => {
     }
   }
 
-  //for eliminating overlaps that occur in the timeline  
   const verifySubtitles = () => {
 
     let tempOverlapsArray = [];
-
     let validExport = true;
     let tempData = cloneDeep(data);
     let actions = tempData[0].actions;
-
-    for(let i = 0; i < actions.length - 1; i++) {
+  
+    // Function to sort actions by their start time
+    const sortActions = () => {
+      actions.sort((a, b) => a.start - b.start);
+    };
+  
+    // Sort actions initially
+    sortActions();
+  
+    for (let i = 0; i < actions.length - 1; i++) {
       let current = actions[i];
-      let next = actions[i+1];
-
+      let next = actions[i + 1];
+  
       let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}`);
       let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}`);
-
-      if(current.end > next.start) {
+  
+      if (current.end > next.start) {
         validExport = false;
         console.log("overlap at: ", current.end, " and ", next.start);
-
-        currentElement.style.backgroundColor="#BF0000";
-        nextElement.style.backgroundColor="#FF4040";
+  
+        currentElement.style.backgroundColor = "#BF0000";
+        nextElement.style.backgroundColor = "#FF4040";
         tempOverlapsArray.push([next.start, current.end]);
-
+  
+        // Adjust next.start to resolve overlap
+        next.start = current.end; // or any other appropriate adjustment
+        sortActions(); // Re-sort actions after adjustment
+        i = -1; // Restart loop to re-check all actions
       } else {
-        nextElement.style.backgroundColor="transparent";
+        nextElement.style.backgroundColor = "transparent";
       }
-
     }
-
-    if(validExport) {
+  
+    if (validExport) {
       return true;
     } else {
       console.log("invalid vtt, found overlapping subtitles");
       setOverlaps([...tempOverlapsArray]);
+      tempData[0].actions = [...actions];
+      setData([...tempData]);
     }
-
+  
     return false;
-
-  }
+  };
+  
 
   //for inserting a subtitle through the side subtitle list
   const insertSubtitle = (previousEndTime: number, content: string) => {
@@ -256,7 +279,12 @@ const App = () => {
           src: "/audio/bg.mp3",
           name: content,
           subtitleNumber: 0,
-          metaData: '',
+          alignment: "",
+          direction: "",
+          lineAlign: "",
+          positionAlign: "",
+          size: 100,
+          textPosition: "",
         } 
       }
       let tempArray = cloneDeep(data);
@@ -278,8 +306,17 @@ const App = () => {
     subtitleObject.data.name = newInput;
   }
 
+  const onHandleStartTimeChange = (newInput, subtitleObject) => {
+    subtitleObject.start = Number(newInput);
+  }
+
+  const onHandleEndTimeChange = (newInput, subtitleObject) => {
+    subtitleObject.end = Number(newInput);
+  }
+
   const onSetParentData = () => {
     setData([...data]);
+    verifySubtitles();
   }
 
   const handleListClick = (subtitleObject) => {
@@ -294,6 +331,14 @@ const App = () => {
           <div onClick={() => deleteSubtitle(subtitleObject.id)}>
             (-)
           </div>
+          <div>
+            <TimeInput 
+              placeholder={subtitleObject.start}
+              handleTimeChange={onHandleStartTimeChange}
+              subtitleObject={subtitleObject}
+              setParentData={onSetParentData}
+            />
+          </div>
           <div onClick={() => handleListClick(subtitleObject)}>
             <SingleInputForm
               placeholder={subtitleObject.data.name}
@@ -301,6 +346,14 @@ const App = () => {
               subtitleObject={subtitleObject}
               setParentData={onSetParentData}
             />
+          </div>
+          <div>
+            <EndInput 
+                placeholder={subtitleObject.end}
+                handleTimeChange={onHandleEndTimeChange}
+                subtitleObject={subtitleObject}
+                setParentData={onSetParentData}
+              />
           </div>
           <div onClick={() => openModal(subtitleObject.end)}>
             (+)
@@ -372,9 +425,44 @@ const App = () => {
     setLinkInputValue(event.target.value);
   }
 
-  //////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////// handling the search bar
+
+  const [searchResults, setSearchResults] = useState([]);
+
+  const handleSearchChange = (term, hits) => {
+    console.log("term: ", term, " hits: ", hits);
+    if(term.length > 1) {
+      setSearchResults(hits);
+    } else {
+      setSearchResults([]);
+    }
+  }
+
+  const handleSearchClick = () => {
+    console.log("search clicked");
+  }
+
+  //get starttime from the result that was clicked
+  const handleResultClick = (startTime) => {
+    timelineState.current.setTime(startTime);
+    playerRef.current.currentTime(timelineState.current.getTime());
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////
 
   useEffect(() => {
+    let tempActionData = [];
+    data[0].actions.forEach(action => {
+      let searchObject = {
+        startTime: action.start,
+        endTime: action.end,
+        actionId: action.id,
+        content: action.data.name,
+        subtitleNumber: action.data.subtitleNumber,
+      }
+      tempActionData.push(searchObject);
+    })
+    setActionData([...tempActionData]);
     console.log("current dataset: ", data);
     if(timelineState.current && playerRef.current) {
 
@@ -389,7 +477,7 @@ const App = () => {
 
       let difference = timelineState.current.getTime() - playerRef.current.currentTime();
 
-      if(difference > 0.2 || difference < -0.2) {
+      if(difference > 0.1 || difference < -0.1) {
         timelineState.current.setTime(playerRef.current.currentTime());
       }
 
@@ -400,6 +488,16 @@ const App = () => {
     <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
         <div className="scroll-container" style={{height:"100%", flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#8A9A5B"}}>
+        <div style={{zIndex: 5}}>
+          <SideListSearch dataObjects={actionData} onSearchChange={handleSearchChange} onSearchClick={handleSearchClick} />
+          <ul>
+            {searchResults.slice(0, 5).map(result => (
+              <li key={result.id} style={{backgroundColor: "#B2BEB5"}} onClick={() => handleResultClick(result.startTime)}>
+                <p>{result.content} | start: {result.startTime} | end: {result.endTime}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
           <p>Scroll Container</p>
           <Modal
               isOpen={modalIsOpen}
@@ -470,6 +568,8 @@ const App = () => {
           onChange={(data) => {
             console.log("data changed: ", data);
             setData(data as CusTomTimelineRow[]);
+            verifySubtitles();
+            buildList();
           }}
           getActionRender={(action, row) => {
             if (action.effectId === 'effect0') {

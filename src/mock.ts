@@ -11,7 +11,12 @@ export interface CustomTimelineAction extends TimelineAction {
     src: string;
     name: string;
     subtitleNumber: number;
-    metaData: string;
+    alignment: string;
+    direction: string;
+    lineAlign: string;
+    positionAlign: string;
+    size: number;
+    textPosition: string;
   };
 }
 
@@ -81,7 +86,12 @@ export const mockData: CusTomTimelineRow[] = [
           src: '/lottie/lottie1/data.json',
           name: 'Hello',
           subtitleNumber: 1,
-          metaData: "",
+          alignment: "",
+          direction: "",
+          lineAlign: "",
+          positionAlign: "",
+          size: 100,
+          textPosition: "",
         },
       },
       {
@@ -93,7 +103,12 @@ export const mockData: CusTomTimelineRow[] = [
           src: '/lottie/lottie1/data.json',
           name: 'World',
           subtitleNumber: 2,
-          metaData: "",
+          alignment: "",
+          direction: "",
+          lineAlign: "",
+          positionAlign: "",
+          size: 100,
+          textPosition: "",
         },
       },
     ],
