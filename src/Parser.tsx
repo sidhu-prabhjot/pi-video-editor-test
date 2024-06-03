@@ -13,7 +13,7 @@ interface CustomTimelineAction extends TimelineAction {
         alignment: string;
         direction: string;
         lineAlign: string;
-        positionAlign: string;
+        linePosition: string;
         size: number;
         textPosition: string;
     };
@@ -55,7 +55,7 @@ export const parseVTTFile = (fileData, idMap) => {
                 alignment: data.alignment,
                 direction: data.direction,
                 lineAlign: data.lineAlign,
-                positionAlign: data.positionAlign,
+                linePosition: data.linePosition,
                 size: data.size,
                 textPosition: data.textPosition,
             },

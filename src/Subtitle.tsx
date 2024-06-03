@@ -7,7 +7,7 @@ type SubtitleProps = {
 const Subtitle: React.FC<SubtitleProps> = ({ currentSubtitle }) => {
 
     return (
-        <div style={{width:"100%", display:"flex", justifyContent:"center"}}>
+        <div style={{backgroundColor: "#C1BDB3"}}>
             <p>{currentSubtitle}</p>
         </div>
     );

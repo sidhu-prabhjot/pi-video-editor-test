@@ -14,7 +14,7 @@ export interface CustomTimelineAction extends TimelineAction {
     alignment: string;
     direction: string;
     lineAlign: string;
-    positionAlign: string;
+    linePosition: string;
     size: number;
     textPosition: string;
   };
@@ -89,7 +89,7 @@ export const mockData: CusTomTimelineRow[] = [
           alignment: "",
           direction: "",
           lineAlign: "",
-          positionAlign: "",
+          linePosition: "",
           size: 100,
           textPosition: "",
         },
@@ -106,7 +106,7 @@ export const mockData: CusTomTimelineRow[] = [
           alignment: "",
           direction: "",
           lineAlign: "",
-          positionAlign: "",
+          linePosition: "",
           size: 100,
           textPosition: "",
         },

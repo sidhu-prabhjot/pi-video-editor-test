@@ -33,8 +33,8 @@ const customStyles = {
 /////////////////////////////////////////////////////////////////////////////data control
 
 const scaleWidth = 160;
-const scale = 5;
 const startLeft = 20;
+const scaleSplitCount = 6;
 
 //defines the properties of a subtitle object in the timeline
 interface CustomTimelineAction extends TimelineAction {
@@ -45,7 +45,7 @@ interface CustomTimelineAction extends TimelineAction {
     alignment: string;
     direction: string;
     lineAlign: string;
-    positionAlign: string;
+    linePosition: string;
     size: number;
     textPosition: string;
   };
@@ -73,6 +73,14 @@ const App = () => {
           enter: ({ action, time }) => {
             const src = (action as CustomTimelineAction).data.src;
             lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
+            setAlignment((action as CustomTimelineAction).data.alignment);
+            let linePosition = (action as CustomTimelineAction).data.linePosition;
+            console.log(linePosition)
+            if(linePosition == "auto") {
+              setLine(100);
+            } else {
+              setLine(Number(linePosition))
+            }
             setCurrentSubtitle((action as CustomTimelineAction).data.name);
     
             let listElement = document.getElementById(`${(action as CustomTimelineAction).id}`);
@@ -116,6 +124,15 @@ const App = () => {
 
   //search bar related states
   const [actionData, setActionData] = useState([]);
+
+  //subtitle positioning:
+  const [alignment, setAlignment] = useState("center");
+  const [line, setLine] = useState(0)
+
+  //timeline customization
+  const [zoom, setZoom] = useState(5);
+  const [timelineWidth, setTimelineWidth] = useState(160);
+
 
   ///////////////////////////////////////////////////////// videojs player
 
@@ -282,7 +299,7 @@ const App = () => {
           alignment: "",
           direction: "",
           lineAlign: "",
-          positionAlign: "",
+          linePosition: "",
           size: 100,
           textPosition: "",
         } 
@@ -306,6 +323,15 @@ const App = () => {
     subtitleObject.data.name = newInput;
   }
 
+  const onHandleLinePositionChange = (newInput, subtitleObject) => {
+    console.log(newInput)
+    if(newInput === "auto") {
+      subtitleObject.data.linePosition = 100;
+    } else if (!Number.isNaN(newInput)) {
+      subtitleObject.data.linePosition = Number(newInput);
+    }
+  }
+
   const onHandleStartTimeChange = (newInput, subtitleObject) => {
     subtitleObject.start = Number(newInput);
   }
@@ -322,6 +348,17 @@ const App = () => {
   const handleListClick = (subtitleObject) => {
     timelineState.current.setTime(subtitleObject.start);
     playerRef.current.currentTime(timelineState.current.getTime());
+  }
+
+  const handleAlignmentChange = (subtitleObject, alignment, id) => {
+    subtitleObject.data.alignment = alignment;
+    document.getElementById(`left-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
+    document.getElementById(`middle-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
+    document.getElementById(`right-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
+    document.getElementById(id).style.backgroundColor = "#7F7979";
+    setData([...data]);
+
+    console.log("alignment change: ", alignment);
   }
 
   const buildList = () => {
@@ -354,6 +391,25 @@ const App = () => {
                 subtitleObject={subtitleObject}
                 setParentData={onSetParentData}
               />
+          </div>
+          <div>
+            X-Align:
+            <button id={`left-align-${subtitleObject.id}`} onClick={() => {
+              handleAlignmentChange(subtitleObject, "left", `left-align-${subtitleObject.id}`);
+            }}>Left</button>
+            <button  id={`middle-align-${subtitleObject.id}`} onClick={() => {
+              handleAlignmentChange(subtitleObject, "middle", `middle-align-${subtitleObject.id}`);
+              }}>Middle</button>
+            <button  id={`right-align-${subtitleObject.id}`} onClick={() => handleAlignmentChange(subtitleObject, "right", `right-align-${subtitleObject.id}`)}>Right</button>
+          </div>
+          <div style={{display:"flex", flexDirection:"row"}}>
+            Y-Align:
+            <SingleInputForm
+              placeholder={subtitleObject.data.linePosition}
+              handleChange={onHandleLinePositionChange}
+              subtitleObject={subtitleObject}
+              setParentData={onSetParentData}
+            />
           </div>
           <div onClick={() => openModal(subtitleObject.end)}>
             (+)
@@ -448,7 +504,26 @@ const App = () => {
     playerRef.current.currentTime(timelineState.current.getTime());
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////// handle timeline customization
+
+  const handleZoom = (direction) => {
+
+    let tempZoom = zoom;
+    let tempWidth = timelineWidth;
+    if(direction === "out" && zoom >= 1) {
+      tempZoom += 1;
+    } else if(direction === "out" && zoom < 1) {
+      tempZoom += 0.1;
+    } else if (direction === "in" && zoom <= 1 && zoom > 0) {
+      tempZoom -= 0.1;
+    } else if (direction === "in" && zoom > 1) {
+      tempZoom -= 1;
+    }
+    setZoom(tempZoom);
+
+  };
+
+  ////////////////////////////////////////////////////////////////////////////////////////
 
   useEffect(() => {
     let tempActionData = [];
@@ -534,7 +609,8 @@ const App = () => {
             <button type="submit">find video</button>
           </form>
           <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
-          <div className="subtitle" style={{display: "flex", flex: "1"}}>
+          {/**the line positioning and alignment are from the actions objects themselves*/}
+          <div className="subtitle" style={{display: "flex", width: "100%", height:"auto", backgroundColor: "#ffffff", justifyContent: `${alignment}`, marginTop: `${line}px`}}>
             <Subtitle currentSubtitle={currentSubtitle} />
           </div>
         </div>
@@ -552,13 +628,18 @@ const App = () => {
             style={{ marginBottom: 20 }}
           />
         </div>
+        <div style={{display:"flex", flexDirection:"row"}}>
+          <button onClick={() => handleZoom("out")}>Zoom Out (-)</button>
+          <button onClick={() => handleZoom("in")}>Zoom In (+)</button>
+        </div>
         <div className="player-panel" id="player-ground-1" ref={playerPanel}></div>
         <div style={{display:"none"}}>
           <TimelinePlayer timelineState={timelineState} autoScrollWhenPlay={autoScrollWhenPlay} />
         </div>
         <Timeline
           style={{width:"100%", height: "100px"}}
-          scale={scale}
+          scale={zoom}
+          scaleSplitCount={scaleSplitCount}
           scaleWidth={scaleWidth}
           startLeft={startLeft}
           autoScroll={true}
