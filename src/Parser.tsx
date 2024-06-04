@@ -35,6 +35,7 @@ const mockData: CusTomTimelineRow[] = [
 const parser = new WebVTTParser();
 
 export const parseVTTFile = (fileData, idMap) => {
+    mockData[0].actions = [];
 
     let file = `${fileData}`;
 
@@ -75,9 +76,12 @@ export const generateVtt = (mockData:CusTomTimelineRow[]) => {
     const actions = mockData[0].actions;
 
     actions.forEach(subtitle => {
-        vtt.add(subtitle.start, subtitle.end, subtitle.data.name);
+        console.log("line position: ", subtitle.data.linePosition);
+        vtt.add(subtitle.start, subtitle.end, subtitle.data.name, `align:${subtitle.data.alignment} line:${subtitle.data.linePosition === "auto" ? "auto" : `${subtitle.data.linePosition}%`}`);
     });
 
     console.log("generated vtt string:\n", vtt.toString());
+
+    return vtt.toString();
 
 }

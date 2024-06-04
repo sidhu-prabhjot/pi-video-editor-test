@@ -98,6 +98,7 @@ const App = () => {
             } else {
               console.error(`Element with id ${action.id} not found`);
             }
+            setCurrentSubtitle("");
           },
         },
       },
@@ -138,6 +139,7 @@ const App = () => {
   ///////////////////////////////////////////////////////// videojs player
 
   const handleOnVideoUpload = (fileObject) => {
+
     // Initialize a FileReader
     const reader = new FileReader();
 
@@ -146,8 +148,8 @@ const App = () => {
     // Define what happens when the file is read successfully
     reader.onload = (event) => {
       let result = parseVTTFile(reader.result, tempIdMap);
+      console.log("parsing result: ", result);
       setData([...result]);
-      console.log("tempIdMap: ", tempIdMap);
     };
     
     // Read the file as text
@@ -207,11 +209,60 @@ const App = () => {
 
   }
 
+  //download the vtt file
+  const downloadVTTFile = (generatedString) => {
+    const element = document.createElement("a");
+    const file = new Blob([generatedString], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = "exported_subtitles.vtt";
+    document.body.appendChild(element); // Required for this to work in FireFox
+    element.click();
+  }
+
+  //call verifier and then generate vtt to export
   const generateVTT = () => {
-    if(verifySubtitles()) {
-      generateVtt(data);
+    if(verifySubtitlesForExport()) {
+      let generatedString = generateVtt(data);
+      downloadVTTFile(generatedString);
     }
   }
+
+  const verifySubtitlesForExport = () => {
+
+    let tempOverlapsArray = [];
+    let validExport = true;
+    let tempData = cloneDeep(data);
+    let actions = tempData[0].actions;
+  
+    for (let i = 0; i < actions.length - 1; i++) {
+      let current = actions[i];
+      let next = actions[i + 1];
+  
+      let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}`);
+      let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}`);
+  
+      if (current.end > next.start) {
+        validExport = false;
+  
+        currentElement.style.backgroundColor = "#BF0000";
+        nextElement.style.backgroundColor = "#FF4040";
+        tempOverlapsArray.push([next.start, current.end]);
+      } else {
+        nextElement.style.backgroundColor = "transparent";
+      }
+    }
+  
+    if (validExport) {
+      return true;
+    } else {
+      console.log("invalid vtt, found overlapping subtitles");
+      setOverlaps([...tempOverlapsArray]);
+      tempData[0].actions = [...actions];
+      setData([...tempData]);
+    }
+  
+    return false;
+  };
 
   const verifySubtitles = () => {
 
@@ -253,9 +304,13 @@ const App = () => {
     }
   
     if (validExport) {
+      console.log("sorted actions: ", actions);
+      tempData[0].actions = [...actions];
+      setData([...tempData]);
       return true;
     } else {
       console.log("invalid vtt, found overlapping subtitles");
+      console.log("sorted actions: ", actions);
       setOverlaps([...tempOverlapsArray]);
       tempData[0].actions = [...actions];
       setData([...tempData]);
@@ -656,7 +711,7 @@ const App = () => {
           <TimelinePlayer timelineState={timelineState} autoScrollWhenPlay={autoScrollWhenPlay} />
         </div>
         <Timeline
-          style={{width:"100%", height: "100px", backgroundColor: "#7846a7", color:"#00000"}}
+          style={{width:"100%", height: "150px", backgroundColor: "#7846a7", color:"#00000"}}
           scale={zoom}
           scaleSplitCount={scaleSplit}
           scaleWidth={timelineWidth}
@@ -669,7 +724,6 @@ const App = () => {
             console.log("data changed: ", data);
             setData(data as CusTomTimelineRow[]);
             verifySubtitles();
-            buildList();
           }}
           getActionRender={(action, row) => {
             if (action.effectId === 'effect0') {
