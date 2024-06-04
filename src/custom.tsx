@@ -17,7 +17,7 @@ export const CustomRender0: FC<CustomRenderProps> = ({ action, row}) => {
 
 export const CustomRender1: FC<CustomRenderProps> = ({ action, row, onActionClick }) => {
   return (
-    <div className={'effect1'} onClick={() => onActionClick(action)}>
+    <div style={{backgroundColor: "#ffffff", height: "100%", padding: "5px", borderRadius: "2px", border: "2px solid rgba(0, 0, 0, 0.05)"}} className={'effect1'} onClick={() => onActionClick(action)}>
       <div className={`effect1-text`}>{`${action.data.name}`}</div>
     </div>
   );

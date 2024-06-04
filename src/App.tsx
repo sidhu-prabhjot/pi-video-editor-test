@@ -32,9 +32,9 @@ const customStyles = {
 
 /////////////////////////////////////////////////////////////////////////////data control
 
-const scaleWidth = 160;
+const scaleWidth = 100;
 const startLeft = 20;
-const scaleSplitCount = 6;
+// const scaleSplitCount = 6;
 
 //defines the properties of a subtitle object in the timeline
 interface CustomTimelineAction extends TimelineAction {
@@ -77,9 +77,9 @@ const App = () => {
             let linePosition = (action as CustomTimelineAction).data.linePosition;
             console.log(linePosition)
             if(linePosition == "auto") {
-              setLine(100);
+              setLine(300);
             } else {
-              setLine(Number(linePosition))
+              setLine(Number(linePosition) * 3)
             }
             setCurrentSubtitle((action as CustomTimelineAction).data.name);
     
@@ -132,6 +132,7 @@ const App = () => {
   //timeline customization
   const [zoom, setZoom] = useState(5);
   const [timelineWidth, setTimelineWidth] = useState(160);
+  const [scaleSplit, setScaleSplit] = useState(6);
 
 
   ///////////////////////////////////////////////////////// videojs player
@@ -398,9 +399,11 @@ const App = () => {
               handleAlignmentChange(subtitleObject, "left", `left-align-${subtitleObject.id}`);
             }}>Left</button>
             <button  id={`middle-align-${subtitleObject.id}`} onClick={() => {
-              handleAlignmentChange(subtitleObject, "middle", `middle-align-${subtitleObject.id}`);
+              handleAlignmentChange(subtitleObject, "center", `middle-align-${subtitleObject.id}`);
               }}>Middle</button>
-            <button  id={`right-align-${subtitleObject.id}`} onClick={() => handleAlignmentChange(subtitleObject, "right", `right-align-${subtitleObject.id}`)}>Right</button>
+            <button  id={`right-align-${subtitleObject.id}`} onClick={() => {
+              handleAlignmentChange(subtitleObject, "right", `right-align-${subtitleObject.id}`)
+              }}>Right</button>
           </div>
           <div style={{display:"flex", flexDirection:"row"}}>
             Y-Align:
@@ -506,22 +509,39 @@ const App = () => {
 
   //////////////////////////////////////////////////////////////////////////////////// handle timeline customization
 
-  const handleZoom = (direction) => {
+  // const handleZoom = (direction) => {
 
-    let tempZoom = zoom;
-    let tempWidth = timelineWidth;
-    if(direction === "out" && zoom >= 1) {
-      tempZoom += 1;
-    } else if(direction === "out" && zoom < 1) {
-      tempZoom += 0.1;
-    } else if (direction === "in" && zoom <= 1 && zoom > 0) {
-      tempZoom -= 0.1;
-    } else if (direction === "in" && zoom > 1) {
-      tempZoom -= 1;
-    }
-    setZoom(tempZoom);
+  //   playerRef.current.pause();
 
-  };
+  //   let tempZoom = zoom;
+  //   let tempWidth = timelineWidth;
+  //   let tempSplit = scaleSplit;
+  //   if(direction === "out" && zoom >= 1) {
+  //     tempZoom += 1;
+
+  //     if(tempZoom % 2 == 0 && scaleSplit > 5) {
+  //       tempSplit += 2;
+  //     }
+
+  //   } else if(direction === "out" && zoom < 1) {
+  //     tempZoom += 0.1;
+
+  //   } else if (direction === "in" && zoom <= 1 && zoom > 0) {
+  //     tempZoom -= 0.1;
+  //   } else if (direction === "in" && zoom > 1) {
+  //     tempZoom -= 1;
+
+  //     if(tempZoom % 2 == 0 && scaleSplit > 5) {
+  //       tempSplit -= 2;
+  //     }
+
+  //   }
+  //   setTimelineWidth(tempWidth);
+  //   setZoom(tempZoom);
+  //   setScaleSplit(tempSplit);
+  //   playerRef.current.currentTime(timelineState.current.getTime());
+
+  // };
 
   ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -552,9 +572,7 @@ const App = () => {
 
       let difference = timelineState.current.getTime() - playerRef.current.currentTime();
 
-      if(difference > 0.1 || difference < -0.1) {
-        timelineState.current.setTime(playerRef.current.currentTime());
-      }
+      timelineState.current.setTime(playerRef.current.currentTime());
 
     } 
   })
@@ -596,7 +614,13 @@ const App = () => {
             </ul>
           </div>
         </div>
-        <div className="video-container" style={{height:"100%", flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#7393B3", overflowY: "scroll"}}>
+        <div className="video-container" style={{flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#7393B3", overflowY: "scroll"}}>
+          <div style={{position: "relative"}}>
+            <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
+            {/**the line positioning and alignment are from the actions objects themselves*/}
+            {/* <div className="subtitle" style={{position: "absolute", zIndex:"999999", backgroundColor: "transparent", justifyContent: `${alignment}`, marginTop: `${line}px`, marginRight: "10px", marginLeft:"10px"}}> */}
+            <Subtitle currentSubtitle={currentSubtitle} alignment={alignment} linePosition={line} />
+          </div>
           <DragDrop onVideoUpload={handleOnVideoUpload} />
           <form id={'video-link-form'} onSubmit={handleLinkSubmit}>
             <input 
@@ -608,11 +632,6 @@ const App = () => {
             </input>
             <button type="submit">find video</button>
           </form>
-          <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
-          {/**the line positioning and alignment are from the actions objects themselves*/}
-          <div className="subtitle" style={{display: "flex", width: "100%", height:"auto", backgroundColor: "#ffffff", justifyContent: `${alignment}`, marginTop: `${line}px`}}>
-            <Subtitle currentSubtitle={currentSubtitle} />
-          </div>
         </div>
       </div>
       <div className="timeline-editor-engine main-row-2" style={{height:"30vh", backgroundColor:"#808080", display:"flex", flexDirection:"column"}}>
@@ -628,19 +647,19 @@ const App = () => {
             style={{ marginBottom: 20 }}
           />
         </div>
-        <div style={{display:"flex", flexDirection:"row"}}>
+        {/* <div style={{display:"flex", flexDirection:"row"}}>
           <button onClick={() => handleZoom("out")}>Zoom Out (-)</button>
           <button onClick={() => handleZoom("in")}>Zoom In (+)</button>
-        </div>
+        </div> */}
         <div className="player-panel" id="player-ground-1" ref={playerPanel}></div>
         <div style={{display:"none"}}>
           <TimelinePlayer timelineState={timelineState} autoScrollWhenPlay={autoScrollWhenPlay} />
         </div>
         <Timeline
-          style={{width:"100%", height: "100px"}}
+          style={{width:"100%", height: "100px", backgroundColor: "#7846a7", color:"#00000"}}
           scale={zoom}
-          scaleSplitCount={scaleSplitCount}
-          scaleWidth={scaleWidth}
+          scaleSplitCount={scaleSplit}
+          scaleWidth={timelineWidth}
           startLeft={startLeft}
           autoScroll={true}
           ref={timelineState}

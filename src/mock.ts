@@ -25,33 +25,6 @@ export interface CusTomTimelineRow extends TimelineRow {
 }
 
 export const mockEffect: Record<string, TimelineEffect> = {
-  effect0: {
-    id: 'effect0',
-    name: 'effect0',
-    source: {
-      start: ({ action, engine, isPlaying, time }) => {
-        if (isPlaying) {
-          const src = (action as CustomTimelineAction).data.src;
-          audioControl.start({ id: src, src, startTime: action.start, engine, time });
-          console.log("data: ", (action as CustomTimelineAction));
-        }
-      },
-      enter: ({ action, engine, isPlaying, time }) => {
-        if (isPlaying) {
-          const src = (action as CustomTimelineAction).data.src;
-          audioControl.start({ id: src, src, startTime: action.start, engine, time });
-        }
-      },
-      leave: ({ action, engine }) => {
-        const src = (action as CustomTimelineAction).data.src;
-        audioControl.stop({ id: src, engine });
-      },
-      stop: ({ action, engine }) => {
-        const src = (action as CustomTimelineAction).data.src;
-        audioControl.stop({ id: src, engine });
-      },
-    },
-  },
   effect1: {
     id: 'effect1',
     name: 'effect1',

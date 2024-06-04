@@ -44,8 +44,8 @@ export const VideoJS = ({options, onReady}) => {
   }, [playerRef]);
 
   return (
-    <div data-vjs-player>
-      <div ref={videoRef} />
+    <div style={{zIndex: "0"}} data-vjs-player>
+      <div style={{zIndex: "0"}} ref={videoRef} />
     </div>
   );
 }
