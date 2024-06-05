@@ -75,7 +75,6 @@ const App = () => {
             lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
             setAlignment((action as CustomTimelineAction).data.alignment);
             let linePosition = (action as CustomTimelineAction).data.linePosition;
-            console.log(linePosition)
             if(linePosition == "auto") {
               setLine(300);
             } else {
@@ -134,6 +133,12 @@ const App = () => {
   const [zoom, setZoom] = useState(5);
   const [timelineWidth, setTimelineWidth] = useState(160);
   const [scaleSplit, setScaleSplit] = useState(6);
+
+  //list of actions that need to be edited
+  const [editList, setEditList] = useState({});
+  const [alignmentEdit, setAlignmentEdit] = useState(null);
+  const [lineEdit, setLineEdit] = useState(-1);
+  const [contentEdit, setContentEdit] = useState("");
 
 
   ///////////////////////////////////////////////////////// videojs player
@@ -401,11 +406,13 @@ const App = () => {
     verifySubtitles();
   }
 
+  //move to the clicked subtitle on both the video player and the timeline
   const handleListClick = (subtitleObject) => {
     timelineState.current.setTime(subtitleObject.start);
     playerRef.current.currentTime(timelineState.current.getTime());
   }
 
+  //align the element on the screen according to what data was parsed
   const handleAlignmentChange = (subtitleObject, alignment, id) => {
     subtitleObject.data.alignment = alignment;
     document.getElementById(`left-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
@@ -417,9 +424,19 @@ const App = () => {
     console.log("alignment change: ", alignment);
   }
 
+  const addToEditList = (subtitleObject) => {
+    let tempEditList = editList;
+    tempEditList[subtitleObject.id] = subtitleObject.data;
+    console.log("edit list: ", tempEditList);
+    setEditList({...tempEditList});
+  }
+
   const buildList = () => {
-    setList(data[0].actions.map((subtitleObject) => (
+    const newList = data[0].actions.map((subtitleObject) => (
       <li key={subtitleObject.id}>
+        <div>
+          <button onClick={() => addToEditList(subtitleObject)}>Add To Edit List</button>
+        </div>
         <div id={`${subtitleObject.id}`} className={"list-title-container"} style={{ backgroundColor: "transparent" }}>
           <div onClick={() => deleteSubtitle(subtitleObject.id)}>
             (-)
@@ -474,7 +491,8 @@ const App = () => {
           </div>
         </div>
       </li>
-    )));
+    ));
+    setList(newList);
   };
 
   ///////////////////////////////////////////////////////////////// modal functions
@@ -562,75 +580,64 @@ const App = () => {
     playerRef.current.currentTime(timelineState.current.getTime());
   }
 
-  //////////////////////////////////////////////////////////////////////////////////// handle timeline customization
-
-  // const handleZoom = (direction) => {
-
-  //   playerRef.current.pause();
-
-  //   let tempZoom = zoom;
-  //   let tempWidth = timelineWidth;
-  //   let tempSplit = scaleSplit;
-  //   if(direction === "out" && zoom >= 1) {
-  //     tempZoom += 1;
-
-  //     if(tempZoom % 2 == 0 && scaleSplit > 5) {
-  //       tempSplit += 2;
-  //     }
-
-  //   } else if(direction === "out" && zoom < 1) {
-  //     tempZoom += 0.1;
-
-  //   } else if (direction === "in" && zoom <= 1 && zoom > 0) {
-  //     tempZoom -= 0.1;
-  //   } else if (direction === "in" && zoom > 1) {
-  //     tempZoom -= 1;
-
-  //     if(tempZoom % 2 == 0 && scaleSplit > 5) {
-  //       tempSplit -= 2;
-  //     }
-
-  //   }
-  //   setTimelineWidth(tempWidth);
-  //   setZoom(tempZoom);
-  //   setScaleSplit(tempSplit);
-  //   playerRef.current.currentTime(timelineState.current.getTime());
-
-  // };
-
   ////////////////////////////////////////////////////////////////////////////////////////
 
   useEffect(() => {
-    let tempActionData = [];
-    data[0].actions.forEach(action => {
-      let searchObject = {
-        startTime: action.start,
-        endTime: action.end,
-        actionId: action.id,
-        content: action.data.name,
-        subtitleNumber: action.data.subtitleNumber,
-      }
-      tempActionData.push(searchObject);
-    })
-    setActionData([...tempActionData]);
     console.log("current dataset: ", data);
     if(timelineState.current && playerRef.current) {
 
       playerRef.current.currentTime(timelineState.current.getTime());
 
-    } 
+    }
     buildList();
   }, [data])
 
   useEffect(() => {
     if(timelineState.current && playerRef.current) {
 
-      let difference = timelineState.current.getTime() - playerRef.current.currentTime();
-
       timelineState.current.setTime(playerRef.current.currentTime());
 
     } 
   })
+
+  ///////////////////////////////////////////////////////////////////for the edit all/all selected functionality
+  const handleYAlignChange = (newLine) => {
+    setLineEdit(newLine);
+  }
+
+  const handleEditAllAlignmentChange = (alignment, id) => {
+    document.getElementById(`edit-all-left-align`).style.backgroundColor = "#ffffff";
+    document.getElementById(`edit-all-middle-align`).style.backgroundColor = "#ffffff";
+    document.getElementById(`edit-all-right-align`).style.backgroundColor = "#ffffff";
+    document.getElementById(id).style.backgroundColor = "#7F7979";
+    setAlignmentEdit(alignment);
+
+    console.log("alignment change: ", alignment);
+  }
+
+  const editAllSelected = () => {
+    let tempData = cloneDeep(data);
+    let tempActions = tempData[0].actions;
+    tempActions.forEach(action => {
+
+      if(editList[action.id]) {
+        console.log("found: ", editList[action.id]);
+        if(alignmentEdit != null) {
+          console.log("editing: alignment");
+          action.data.alignment = alignmentEdit;
+        }
+  
+        if(lineEdit != -1) {
+          console.log("editing: line position");
+          action.data.linePosition = lineEdit.toString();
+        }
+      }
+
+    })
+
+    setData([...tempData]);
+
+  }
 
   return (
     <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
@@ -668,6 +675,31 @@ const App = () => {
               {list}
             </ul>
           </div>
+            <div>
+              <p>Edit Selected: </p>
+              <div>
+                X-Align:
+                <button id={`edit-all-left-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
+                  handleEditAllAlignmentChange("left", `edit-all-left-align`);
+                }}>Left</button>
+                <button  id={`edit-all-middle-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
+                  handleEditAllAlignmentChange("center", `edit-all-middle-align`);
+                  }}>Middle</button>
+                <button  id={`edit-all-right-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
+                  handleEditAllAlignmentChange("right", `edit-all-right-align`)
+                  }}>Right</button>
+              </div>
+              <div style={{display:"flex", flexDirection:"row"}}>
+                Y-Align:
+                <SingleInputForm
+                  placeholder={"-1"}
+                  handleChange={handleYAlignChange}
+                  subtitleObject={null}
+                  setParentData={onSetParentData}
+                />
+              </div>
+              <button onClick={() => editAllSelected()}>Confirm</button>
+          </div>
         </div>
         <div className="video-container" style={{flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#7393B3", overflowY: "scroll"}}>
           <div style={{position: "relative"}}>
@@ -702,10 +734,6 @@ const App = () => {
             style={{ marginBottom: 20 }}
           />
         </div>
-        {/* <div style={{display:"flex", flexDirection:"row"}}>
-          <button onClick={() => handleZoom("out")}>Zoom Out (-)</button>
-          <button onClick={() => handleZoom("in")}>Zoom In (+)</button>
-        </div> */}
         <div className="player-panel" id="player-ground-1" ref={playerPanel}></div>
         <div style={{display:"none"}}>
           <TimelinePlayer timelineState={timelineState} autoScrollWhenPlay={autoScrollWhenPlay} />

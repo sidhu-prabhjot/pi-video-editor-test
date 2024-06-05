@@ -15,9 +15,8 @@ const SingleInputForm = ({ placeholder, handleChange, subtitleObject, setParentD
   };
 
   return (
-    <form onSubmit={handleSubmit} id={'subtitle-edit-form'}>
+    <form onSubmit={handleSubmit}>
       <input
-        id={'subtitle-edit-input'}
         type="text"
         value={inputValue}
         onChange={handleInputChange}
