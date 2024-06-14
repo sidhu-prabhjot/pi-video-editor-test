@@ -1,5 +1,6 @@
 import React, { FC } from 'react';
 import { CustomTimelineAction, CusTomTimelineRow } from './mock';
+import '../timelineStyles/Timeline.css';
 
 interface CustomRenderProps {
   action: CustomTimelineAction;
@@ -17,8 +18,8 @@ export const CustomRender0: FC<CustomRenderProps> = ({ action, row}) => {
 
 export const CustomRender1: FC<CustomRenderProps> = ({ action, row, onActionClick }) => {
   return (
-    <div style={{backgroundColor: "#ffffff", height: "80px", padding: "5px", borderRadius: "2px", border: "2px solid rgba(0, 0, 0, 0.05)"}} className={'effect1'} onClick={() => onActionClick(action)}>
-      <div className={`effect1-text`}>{`${action.data.name}`}</div>
+    <div className={'effect1 action-container'} onClick={() => onActionClick(action)}>
+      <div className={`effect1-text action-content`}>{`${action.data.name}`}</div>
     </div>
   );
 };

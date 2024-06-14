@@ -1,0 +1,102 @@
+.list-item-container {
+    background-color: rgb(201, 201, 201);
+    margin-bottom: 8px;
+    border-radius: 5px;
+    padding: 0px 10px 0px 10px;
+}
+
+/*Toolbar Styling*/
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-text {
+    padding-bottom: 2px;
+}
+
+.checkbox {
+    padding-top: 0px;
+    margin-top: 0px;
+}
+
+.clickable-icon:hover {
+    cursor: pointer;
+}
+
+/*list title container styling*/
+.list-title-container {
+    display: flex;
+    align-items: center;
+}
+
+.title-input-container {
+    display: flex;
+    flex: 4;
+    padding: 0px 8px 0px 8px;
+}
+
+.title-input {
+    width: 100%;
+}
+
+.time-input-container {
+    display: flex;
+    flex: 1;
+}
+
+/*edit the alignment buttons and inputs styling*/
+.change-alignment-container {
+    display: flex;
+    justify-content: space-between;
+    margin: 0px 0px 4px 0px;
+}
+
+.alignment-container {
+    display: flex;
+    align-items: center;
+}
+
+.alignment-button-container {
+    margin: 0px 4px 0px 4px;
+}
+
+/*add button styling*/
+.add-subtitle-button-container {
+    display: flex;
+    justify-content: space-between;
+    height: 16px;
+    width: 100%;
+}
+
+.clickable-icon {
+    height: 24px;
+}
+
+.first-merge-button {
+    opacity: 0;
+}
+
+@media only screen and (max-width: 1000px) {
+    .list-item-container {
+        font-size: 16px;
+    }    
+    .change-alignment-container {
+        flex-direction: column;
+    }
+    .list-title-container {
+        flex-direction: column;
+        align-items: start;
+    }
+    .title-input-container {
+        width: 100%;
+        padding: 10px 0px 10px 0px;
+    }
+}

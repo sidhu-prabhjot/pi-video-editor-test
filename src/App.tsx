@@ -1,22 +1,23 @@
 import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow, TimelineEngine} from '@xzdarcy/react-timeline-editor';
-import { Switch } from 'antd';
 import { cloneDeep } from 'lodash';
 import _remove from 'lodash/remove';
 import { useRef, useState, useEffect } from 'react';
-import { CustomRender0, CustomRender1} from './custom';
-import './index.less';
-import TimelinePlayer from './player';
-import lottieControl from './lottieControl';
-import {parseVTTFile, generateVtt} from './Parser';
+import { CustomRender0, CustomRender1} from './timlineComponents/custom';
+import './timelineStyles/index.less';
+import TimelinePlayer from './timlineComponents/player';
+import lottieControl from './timlineComponents/lottieControl';
+import {parseVTTFile, generateVtt} from './processComponents/Parser';
 import Modal from 'react-modal';
 import VideoJS from './VideoJS';
 import videojs from 'video.js';
-import Subtitle from './Subtitle';
-import SingleInputForm from './SingleInputForm';
-import DragDrop from './DragDrop';
-import TimeInput from './TimeInput';
-import EndInput from './EndInput';
-import SideListSearch from './SideListSearch';
+import Subtitle from './components/Subtitle';
+import SingleInputForm from './components/SingleInputForm';
+import DragDrop from './components/DragDrop';
+import SideListSearch from './components/SideListSearch';
+import ListItem from './components/ListItem';
+import TextSubmit from './components/TextSubmit';
+import Button from '@mui/material/Button';
+import Switch from '@mui/material/Switch';
 
 //Modal styling
 const customStyles = {
@@ -82,18 +83,18 @@ const App = () => {
             }
             setCurrentSubtitle((action as CustomTimelineAction).data.name);
     
-            let listElement = document.getElementById(`${(action as CustomTimelineAction).id}`);
+            let listElement = document.getElementById(`${(action as CustomTimelineAction).id}-list-item-container`);
             if (listElement) {
-              listElement.style.backgroundColor = "#ffffff";
+              listElement.style.backgroundColor = "rgb(140, 186, 179)";
               listElement.scrollIntoView();
             } else {
               console.error(`Element with id ${action.id} not found`);
             }
           },
           leave: ({ action }) => {
-            let listElement = document.getElementById(`${(action as CustomTimelineAction).id}`);
+            let listElement = document.getElementById(`${(action as CustomTimelineAction).id}-list-item-container`);
             if (listElement) {
-              listElement.style.backgroundColor = "transparent";
+              listElement.style.backgroundColor = "rgb(201, 201, 201)";
             } else {
               console.error(`Element with id ${action.id} not found`);
             }
@@ -394,11 +395,35 @@ const App = () => {
   }
 
   const onHandleStartTimeChange = (newInput, subtitleObject) => {
-    subtitleObject.start = Number(newInput);
+    if(newInput) {
+      subtitleObject.start = Number(newInput);
+    }
   }
 
   const onHandleEndTimeChange = (newInput, subtitleObject) => {
-    subtitleObject.end = Number(newInput);
+    if(newInput) {
+      subtitleObject.end = Number(newInput);
+    }
+  }
+
+  //merge two subtitles together
+  const onHandleMerge = (subtitleObject) => {
+
+    let mergedData = [];
+
+    //iterete through data until object is found
+    let length = data[0].actions.length;
+    let actions = [...data[0].actions];
+    for(let i = 0; i < length; i++) {
+
+      if(actions[i] == subtitleObject) {
+
+        let combinedContent = `${actions[i].data.name} ${subtitleObject.data.name}`;
+
+      }
+
+    }
+
   }
 
   const onSetParentData = () => {
@@ -412,8 +437,15 @@ const App = () => {
     playerRef.current.currentTime(timelineState.current.getTime());
   }
 
+  const handleAlignmentChange = (subtitleObject, alignment) => {
+    subtitleObject.data.alignment = alignment;
+    setData([...data]);
+
+    console.log("alignment change: ", alignment);
+  }
+
   //align the element on the screen according to what data was parsed
-  const handleAlignmentChange = (subtitleObject, alignment, id) => {
+  const tempHandleAlignmentChange = (subtitleObject, alignment, id) => {
     subtitleObject.data.alignment = alignment;
     document.getElementById(`left-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
     document.getElementById(`middle-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
@@ -433,64 +465,20 @@ const App = () => {
 
   const buildList = () => {
     const newList = data[0].actions.map((subtitleObject) => (
-      <li key={subtitleObject.id}>
-        <div>
-          <button onClick={() => addToEditList(subtitleObject)}>Add To Edit List</button>
-        </div>
-        <div id={`${subtitleObject.id}`} className={"list-title-container"} style={{ backgroundColor: "transparent" }}>
-          <div onClick={() => deleteSubtitle(subtitleObject.id)}>
-            (-)
-          </div>
-          <div>
-            <TimeInput 
-              placeholder={subtitleObject.start}
-              handleTimeChange={onHandleStartTimeChange}
-              subtitleObject={subtitleObject}
-              setParentData={onSetParentData}
-            />
-          </div>
-          <div onClick={() => handleListClick(subtitleObject)}>
-            <SingleInputForm
-              placeholder={subtitleObject.data.name}
-              handleChange={onHandleChange}
-              subtitleObject={subtitleObject}
-              setParentData={onSetParentData}
-            />
-          </div>
-          <div>
-            <EndInput 
-                placeholder={subtitleObject.end}
-                handleTimeChange={onHandleEndTimeChange}
-                subtitleObject={subtitleObject}
-                setParentData={onSetParentData}
-              />
-          </div>
-          <div>
-            X-Align:
-            <button id={`left-align-${subtitleObject.id}`} onClick={() => {
-              handleAlignmentChange(subtitleObject, "left", `left-align-${subtitleObject.id}`);
-            }}>Left</button>
-            <button  id={`middle-align-${subtitleObject.id}`} onClick={() => {
-              handleAlignmentChange(subtitleObject, "center", `middle-align-${subtitleObject.id}`);
-              }}>Middle</button>
-            <button  id={`right-align-${subtitleObject.id}`} onClick={() => {
-              handleAlignmentChange(subtitleObject, "right", `right-align-${subtitleObject.id}`)
-              }}>Right</button>
-          </div>
-          <div style={{display:"flex", flexDirection:"row"}}>
-            Y-Align:
-            <SingleInputForm
-              placeholder={subtitleObject.data.linePosition}
-              handleChange={onHandleLinePositionChange}
-              subtitleObject={subtitleObject}
-              setParentData={onSetParentData}
-            />
-          </div>
-          <div onClick={() => openModal(subtitleObject.end)}>
-            (+)
-          </div>
-        </div>
-      </li>
+      <ListItem 
+        subtitleObject={subtitleObject} 
+        onHandleChange={onHandleChange}
+        onHandleEndTimeChange={onHandleEndTimeChange}
+        onHandleStartTimeChange={onHandleStartTimeChange}
+        onHandleLinePositionChange={onHandleLinePositionChange}
+        onSetParentData={onSetParentData}
+        addToEditList={addToEditList}
+        removeFromEditList={removeFromEditList}
+        deleteSubtitle={deleteSubtitle}
+        handleListClick={handleListClick}
+        openModal={openModal}
+        handleAlignmentChange={handleAlignmentChange}
+      />
     ));
     setList(newList);
   };
@@ -527,7 +515,6 @@ const App = () => {
     }
     
     if (listElement) {
-      listElement.style.backgroundColor = "#f0f0f0"; // Change the color of the selected element
       listElement.scrollIntoView();
     }
 
@@ -584,6 +571,18 @@ const App = () => {
 
   useEffect(() => {
     console.log("current dataset: ", data);
+    let tempActionData = [];
+    data[0].actions.forEach(action => {
+      let searchObject = {
+        startTime: action.start,
+        endTime: action.end,
+        actionId: action.id,
+        content: action.data.name,
+        subtitleNumber: action.data.subtitleNumber,
+      }
+      tempActionData.push(searchObject);
+    })
+    setActionData([...tempActionData]);
     if(timelineState.current && playerRef.current) {
 
       playerRef.current.currentTime(timelineState.current.getTime());
@@ -605,7 +604,13 @@ const App = () => {
     setLineEdit(newLine);
   }
 
-  const handleEditAllAlignmentChange = (alignment, id) => {
+  const handleEditAllAlignmentChange = (alignment) => {
+    setAlignmentEdit(alignment);
+
+    console.log("alignment change: ", alignment);
+  }
+
+  const tempHandleEditAllAlignmentChange = (alignment, id) => {
     document.getElementById(`edit-all-left-align`).style.backgroundColor = "#ffffff";
     document.getElementById(`edit-all-middle-align`).style.backgroundColor = "#ffffff";
     document.getElementById(`edit-all-right-align`).style.backgroundColor = "#ffffff";
@@ -639,12 +644,45 @@ const App = () => {
 
   }
 
+  const removeFromEditList = (id) => {
+
+    let tempEditList = editList;
+    delete tempEditList[`${id}`];
+    console.log(tempEditList);
+    setEditList({...tempEditList});
+
+  }
+
+  const [switchState, setSwitchState] = useState(true);
+
+  const toggleAutoScroll = () => {
+    if(switchState) {
+      setSwitchState(false);
+    } else {
+      setSwitchState(true);
+    }
+  }
+
+  useEffect(() => {
+    if(switchState) {
+      autoScrollWhenPlay.current = true;
+    } else {
+      autoScrollWhenPlay.current = false;
+    }
+
+  }, [switchState])
+
   return (
     <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
-        <div className="scroll-container" style={{height:"100%", flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#8A9A5B"}}>
-        <div style={{zIndex: 5}}>
-          <SideListSearch dataObjects={actionData} onSearchChange={handleSearchChange} onSearchClick={handleSearchClick} />
+        <div className="scroll-container">
+        <div>
+          <div className={"search-bar-container"}>
+            <SideListSearch dataObjects={actionData} />
+            <div className={"drag-drop-container"}>
+              <DragDrop onVideoUpload={handleOnVideoUpload} />
+            </div>
+          </div>
           <ul>
             {searchResults.slice(0, 5).map(result => (
               <li key={result.id} style={{backgroundColor: "#B2BEB5"}} onClick={() => handleResultClick(result.startTime)}>
@@ -653,7 +691,6 @@ const App = () => {
             ))}
           </ul>
         </div>
-          <p>Scroll Container</p>
           <Modal
               isOpen={modalIsOpen}
               onAfterOpen={afterOpenModal}
@@ -670,23 +707,23 @@ const App = () => {
               <button onClick={() => insertSubtitle(endTime, inputValue)}>add</button>
             </form>
           </Modal>
-          <div style={{ overflowY: "scroll"}}>
-            <ul>
+          <div className="subtitle-list-container">
+            <ul style={{listStyle: "none", padding:"0px 10px 0px 10px"}}>
               {list}
             </ul>
           </div>
-            <div>
+            <div className="edit-selected-container">
               <p>Edit Selected: </p>
               <div>
                 X-Align:
                 <button id={`edit-all-left-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
-                  handleEditAllAlignmentChange("left", `edit-all-left-align`);
+                  tempHandleEditAllAlignmentChange("left", `edit-all-left-align`);
                 }}>Left</button>
                 <button  id={`edit-all-middle-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
-                  handleEditAllAlignmentChange("center", `edit-all-middle-align`);
+                  tempHandleEditAllAlignmentChange("center", `edit-all-middle-align`);
                   }}>Middle</button>
                 <button  id={`edit-all-right-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
-                  handleEditAllAlignmentChange("right", `edit-all-right-align`)
+                  tempHandleEditAllAlignmentChange("right", `edit-all-right-align`)
                   }}>Right</button>
               </div>
               <div style={{display:"flex", flexDirection:"row"}}>
@@ -701,45 +738,28 @@ const App = () => {
               <button onClick={() => editAllSelected()}>Confirm</button>
           </div>
         </div>
-        <div className="video-container" style={{flex:"1",  display:"flex", flexDirection:"column", backgroundColor:"#7393B3", overflowY: "scroll"}}>
-          <div style={{position: "relative"}}>
+        <div className={"video-container"}>
+          <div className={"toolbar-container"}>
+            <TextSubmit handleInputChange={handleLinkInputChange} handleSubmit={handleLinkSubmit} submitButtonText={"Insert"} label={"Video Link"}/>
+            <Button className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
+          </div>        
+          <div className={"video-player-container"}>
             <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
-            {/**the line positioning and alignment are from the actions objects themselves*/}
-            {/* <div className="subtitle" style={{position: "absolute", zIndex:"999999", backgroundColor: "transparent", justifyContent: `${alignment}`, marginTop: `${line}px`, marginRight: "10px", marginLeft:"10px"}}> */}
             <Subtitle currentSubtitle={currentSubtitle} alignment={alignment} linePosition={line} />
           </div>
-          <DragDrop onVideoUpload={handleOnVideoUpload} />
-          <form id={'video-link-form'} onSubmit={handleLinkSubmit}>
-            <input 
-            type="text" 
-            id={'video-link-input'}
-            value={linkInputValue}
-            onChange={handleLinkInputChange}
-            placeholder={"insert link here"}>
-            </input>
-            <button type="submit">find video</button>
-          </form>
         </div>
       </div>
-      <div className="timeline-editor-engine main-row-2" style={{height:"30vh", backgroundColor:"#808080", display:"flex", flexDirection:"column"}}>
-        <div>
-          <button onClick={() => generateVTT()}>Export To VTT</button>
-        </div>
+      <div className="player-config-row timeline-editor-engine main-row-2">
         <div className="player-config">
-          <Switch
-            checkedChildren="Turn Off Autoscroll"
-            unCheckedChildren="Turn On Autoscroll"
-            defaultChecked={autoScrollWhenPlay.current}
-            onChange={(e) => (autoScrollWhenPlay.current = e)}
-            style={{ marginBottom: 20 }}
-          />
+          <p className="autoscroll-switch-text">Autoscroll:</p>
+          <Switch className={"switch autoscroll-switch"} checked={switchState} onChange={toggleAutoScroll}/>
         </div>
         <div className="player-panel" id="player-ground-1" ref={playerPanel}></div>
         <div style={{display:"none"}}>
           <TimelinePlayer timelineState={timelineState} autoScrollWhenPlay={autoScrollWhenPlay} />
         </div>
         <Timeline
-          style={{width:"100%", height: "150px", backgroundColor: "#7846a7", color:"#00000"}}
+          style={{width:"100%", backgroundColor: "#222222", color:"#00000"}}
           scale={zoom}
           scaleSplitCount={scaleSplit}
           scaleWidth={timelineWidth}
