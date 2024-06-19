@@ -86,22 +86,22 @@ const ListItem = ({
         if(checked) {
             addToEditList(subtitleObject);
         } else {
-            removeFromEditList(subtitleObject.id);
+            removeFromEditList(subtitleObject.data.subtitleNumber);
         }
     }, [checked]);
 
     return (
-        <li id={`${subtitleObject.id}-list-item-container`} onClick={() => handleListClick(subtitleObject)} className="list-item-container" key={subtitleObject.id}>
+        <li id={`${subtitleObject.data.subtitleNumber}-list-item-container`} onClick={() => handleListClick(subtitleObject)} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
             <div className="toolbar">
                 <div className="checkbox-container">
                     <p className="checkbox-text">Edit Select</p>
                     <Checkbox size={"small"} className="checkbox" onChange={onClickChange} checked={checked}/>
                 </div>
-                <div onClick={() => deleteSubtitle(subtitleObject.id)}>
+                <div onClick={() => deleteSubtitle(subtitleObject)}>
                     <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                 </div>
             </div>
-            <div id={`${subtitleObject.id}`} className={"list-title-container"} style={{ backgroundColor: "transparent" }}>
+            <div id={`${subtitleObject.data.subtitleNumber}`} className={"list-title-container"} style={{ backgroundColor: "transparent" }}>
                 <div className={"time-input-container start-input-container"}>
                     <TextField
                     className={"time-input"}

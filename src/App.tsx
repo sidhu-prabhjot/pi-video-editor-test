@@ -87,7 +87,7 @@ const App = () => {
 
             listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
     
-            let listElement = document.getElementById(`${(action as CustomTimelineAction).id}-list-item-container`);
+            let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
             let subtitleElement = document.getElementById("subtitle");
 
             if (listElement) {
@@ -103,7 +103,7 @@ const App = () => {
             }
           },
           leave: ({ action }) => {
-            let listElement = document.getElementById(`${(action as CustomTimelineAction).id}-list-item-container`);
+            let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
             let subtitleElement = document.getElementById("subtitle");
             if (listElement) {
               listElement.style.backgroundColor = "beige";
@@ -210,18 +210,22 @@ const App = () => {
   //////////////////////////////////////////////////////// managing sidelist
 
   //deleting from the entire dataset
-  const deleteSubtitle = (id: String) => {
+  const deleteSubtitle = async (action) => {
 
-    const tempArray = data[0].actions;
+    if(data[0].actions.length > 1) {
+      const tempArray = data;
 
-    let results = _remove(tempArray, (subtitle) => {
-      return subtitle.id != id;
-    });
+      tempArray[0].actions.splice(action.data.subtitleNumber, 1);
 
-    data[0].actions = [...results];
-
-    setData([...data]);
-    verifySubtitles();
+      const update = async (action) => {
+        await listRef.current.scrollToRow(data[0].actions.length - 1);
+        await listRef.current.scrollToRow(action.data.subtitleNumber);
+      }
+      update(action);
+  
+      setData([...tempArray]);
+      verifySubtitles();
+    }
 
   }
 
@@ -254,8 +258,8 @@ const App = () => {
       let current = actions[i];
       let next = actions[i + 1];
   
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}-list-item-container`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}-list-item-container`);
+      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
   
       if (current.end > next.start) {
         validExport = false;
@@ -288,7 +292,6 @@ const App = () => {
   };
 
   const verifySubtitles = () => {
-
     let tempOverlapsArray = [];
     let validExport = true;
     let tempData = cloneDeep(data);
@@ -301,6 +304,11 @@ const App = () => {
   
     // Sort actions initially
     sortActions();
+
+    for (let i = 0; i < actions.length; i++) {
+      actions[i].data.subtitleNumber = i;
+    }
+
   
     for (let i = 0; i < actions.length - 1; i++) {
       tempData[0].actions[i].data.subtitleNumber = i;
@@ -308,14 +316,14 @@ const App = () => {
       let next = actions[i + 1];
   
 
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}-list-item-container`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}-list-item-container`);
+      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
   
       if (current.end > next.start) {
         validExport = false;
         console.log("overlap at: ", current.end, " and ", next.start);
 
-        if(currentElement.style) {
+        if(currentElement) {
           currentElement.style.backgroundColor = "#BF0000";
           nextElement.style.backgroundColor = "#FF4040";
         }
@@ -346,7 +354,7 @@ const App = () => {
       tempData[0].actions = [...actions];
       setData([...tempData]);
     }
-  
+
     return false;
   };
   
@@ -516,9 +524,9 @@ const App = () => {
   //align the element on the screen according to what data was parsed
   const tempHandleAlignmentChange = (subtitleObject, alignment, id) => {
     subtitleObject.data.alignment = alignment;
-    document.getElementById(`left-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
-    document.getElementById(`middle-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
-    document.getElementById(`right-align-${subtitleObject.id}`).style.backgroundColor = "#ffffff";
+    document.getElementById(`left-align-${subtitleObject.data.subtitleNumber}`).style.backgroundColor = "#ffffff";
+    document.getElementById(`middle-align-${subtitleObject.data.subtitleNumber}`).style.backgroundColor = "#ffffff";
+    document.getElementById(`right-align-${subtitleObject.data.subtitleNumber}`).style.backgroundColor = "#ffffff";
     document.getElementById(id).style.backgroundColor = "#7F7979";
     setData([...data]);
 
@@ -527,7 +535,7 @@ const App = () => {
 
   const addToEditList = (subtitleObject) => {
     let tempEditList = editList;
-    tempEditList[subtitleObject.id] = subtitleObject.data;
+    tempEditList[subtitleObject.data.subtitleNumber] = subtitleObject.data;
     console.log("edit list: ", tempEditList);
     setEditList({...tempEditList});
   }
@@ -567,7 +575,7 @@ const App = () => {
 
     listRef.current.scrollToRow(action.data.subtitleNumber);
 
-    const listElement = document.getElementById(`${action.id}-list-item-container`);
+    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
     const allListElements = document.getElementsByClassName("list-item-container") as HTMLCollectionOf<HTMLElement>;
     
     if(allListElements) {
@@ -683,8 +691,8 @@ const App = () => {
     let tempActions = tempData[0].actions;
     tempActions.forEach(action => {
 
-      if(editList[action.id]) {
-        console.log("found: ", editList[action.id]);
+      if(editList[action.data.subtitleNumber]) {
+        console.log("found: ", editList[action.data.subtitleNumber]);
         if(alignmentEdit != null) {
           console.log("editing: alignment");
           action.data.alignment = alignmentEdit;
@@ -825,7 +833,7 @@ const App = () => {
               rowCount={data[0].actions.length}
               rowHeight={220}
               rowRenderer={rowRenderer}
-              overscanRowCount={0}
+              overscanRowCount={2}
               {...data}
             />
           </div>
@@ -868,16 +876,17 @@ const App = () => {
           }}
           onActionMoveEnd={(action) => {
             let usableAction = action.action;
+            timelineState.current.setTime(action.start);
+            if(playerRef.current) {
+              playerRef.current.currentTime(timelineState.current.getTime());
+            }
+            verifySubtitles();
             const update = async (usableAction) => {
               console.log("usable action data", usableAction.data);
               await listRef.current.scrollToRow(data[0].actions.length - 1);
               await listRef.current.scrollToRow(usableAction.data.subtitleNumber);
             }
             update(usableAction);
-            timelineState.current.setTime(action.start);
-            if(playerRef.current) {
-              playerRef.current.currentTime(timelineState.current.getTime());
-            }
           }}
           onActionResizeEnd={(action) => {
             let usableAction = action.action;
