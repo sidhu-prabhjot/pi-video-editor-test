@@ -1,8 +1,12 @@
 .list-item-container {
-    background-color: rgb(201, 201, 201);
-    margin-bottom: 8px;
+    background-color: beige;
+    list-style: none;
     border-radius: 5px;
-    padding: 0px 10px 0px 10px;
+}
+
+.list-item-wrapper {
+    margin-bottom: 10px;
+    background-color: rgb(201, 201, 201);
 }
 
 /*Toolbar Styling*/
@@ -11,6 +15,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0px 10px 0px 10px;
 }
 
 .checkbox-container {
@@ -35,6 +40,7 @@
 .list-title-container {
     display: flex;
     align-items: center;
+    padding: 0px 10px 0px 10px;
 }
 
 .title-input-container {
@@ -52,11 +58,18 @@
     flex: 1;
 }
 
+.alignment-title {
+    padding: 0px 10px 0px 10px;
+    font-weight: bold;
+    margin-bottom: 0px;
+}
+
 /*edit the alignment buttons and inputs styling*/
 .change-alignment-container {
     display: flex;
     justify-content: space-between;
     margin: 0px 0px 4px 0px;
+    padding: 0px 10px 0px 10px;
 }
 
 .alignment-container {
@@ -82,6 +95,10 @@
 
 .first-merge-button {
     opacity: 0;
+}
+
+.first-merge-button:hover {
+    cursor: auto;
 }
 
 @media only screen and (max-width: 1000px) {

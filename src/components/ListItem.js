@@ -1,8 +1,5 @@
-//components
 import {useState, useEffect} from 'react';
-import TimeInput from './TimeInput';
-import SingleInputForm from './SingleInputForm';
-import EndInput from './EndInput';
+//components
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 import { faCirclePlus, faCodeMerge } from '@fortawesome/free-solid-svg-icons';
@@ -27,13 +24,15 @@ const ListItem = ({
     handleListClick,
     openModal,
     handleAlignmentChange,
+    onHandleMerge,
 }) => {
 
     const [checked, setChecked] = useState(false);
-    const [display, setDisplay] = useState("flex");
+    const [display, setDisplay] = useState("none");
     const [variantLeft, setVariantLeft] = useState("outlined");
     const [variantMiddle, setVariantMiddle] = useState("outlined");
     const [variantRight, setVariantRight] = useState("outlined");
+    
 
     const onClickChange = () => {
         if(checked) {
@@ -50,12 +49,10 @@ const ListItem = ({
 
     const onHandleStartTimeInputChange = (event) => {
         onHandleStartTimeChange(event.target.value, subtitleObject);
-        onSetParentData();
     }
 
     const onHandleEndTimeInputChange = (event) => {
         onHandleEndTimeChange(event.target.value, subtitleObject);
-        onSetParentData();
     }
 
     const onHandleHorizontalAlignment = (event) => {
@@ -76,8 +73,12 @@ const ListItem = ({
         handleAlignmentChange(subtitleObject, textContent);
     }
 
-    const onHandleLinePositionInputChange= (event) => {
+    const onHandleLinePositionInputChange = (event) => {
         onHandleLinePositionChange(event.target.value, subtitleObject);
+    }
+
+    const onHandleMergeClick = () => {
+        onHandleMerge(subtitleObject);
         onSetParentData();
     }
 
@@ -90,7 +91,7 @@ const ListItem = ({
     }, [checked]);
 
     return (
-        <li id={`${subtitleObject.id}-list-item-container`} className="list-item-container" key={subtitleObject.id}>
+        <li id={`${subtitleObject.id}-list-item-container`} onClick={() => handleListClick(subtitleObject)} className="list-item-container" key={subtitleObject.id}>
             <div className="toolbar">
                 <div className="checkbox-container">
                     <p className="checkbox-text">Edit Select</p>
@@ -110,9 +111,10 @@ const ListItem = ({
                     defaultValue={subtitleObject.start}
                     size={"small"}
                     onChange={onHandleStartTimeInputChange}
+                    onBlur={onSetParentData}
                     />
                 </div>
-                <div className={"title-input-container"} onClick={() => handleListClick(subtitleObject)}>
+                <div className={"title-input-container"}>
                     <TextField
                     className={"title-input"}
                     required
@@ -132,10 +134,11 @@ const ListItem = ({
                     defaultValue={subtitleObject.end}
                     size={"small"}
                     onChange={onHandleEndTimeInputChange}
+                    onBlur={onSetParentData}
                     />
                 </div>
             </div>
-            <p style={{marginBottom:"0px", fontWeight:"bold"}}>Alignment:</p>
+            <p className={"alignment-title"}>Alignment:</p>
             <div className={"change-alignment-container"}>
                 <div className={"alignment-container horizontal-alignment-container"}>
                     <p>Horizontal: </p>
@@ -151,6 +154,7 @@ const ListItem = ({
                     defaultValue={subtitleObject.data.linePosition}
                     size={"small"}
                     onChange={onHandleLinePositionInputChange}
+                    onBlur={onSetParentData}
                     />
                 </div>
             </div>
@@ -163,7 +167,7 @@ const ListItem = ({
                 <div onClick={() => openModal(subtitleObject.end)}>
                     <FontAwesomeIcon style={{display: display}} className={"add-subtitle-button clickable-icon"} icon={faCirclePlus} />
                 </div>
-                <FontAwesomeIcon style={{display: display}} className={"second-merge-button merge-subtitle-button clickable-icon"} icon={faCodeMerge} />
+                <FontAwesomeIcon onClick={() => onHandleMergeClick()} style={{display: display}} className={"second-merge-button merge-subtitle-button clickable-icon"} icon={faCodeMerge} />
             </div>
         </li>
     );

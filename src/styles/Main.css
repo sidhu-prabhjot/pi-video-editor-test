@@ -39,14 +39,10 @@
 }
 
 .subtitle-list-container {
-    overflow-y: scroll;
+    overflow-y: hidden;
+    padding: 0px 5px 0px 5px;
 }
 
-.edit-selected-container {
-    display: none;
-}
-
-/*style={{height:"30vh", backgroundColor:"#808080", display:"flex", flexDirection:"column"}}*/
 .player-config-row {
     display: flex;
     flex-direction: column;
@@ -63,6 +59,15 @@
 .autoscroll-switch-text {
     margin: 0px;
     font-size: 14px;
+}
+
+.list-item-container:last-child .second-merge-button {
+    opacity: 0!important;
+    cursor: auto!important;
+}
+
+#subtitle {
+    transition: opacity 0.1s;
 }
 
 @media only screen and (max-width: 1000px) {

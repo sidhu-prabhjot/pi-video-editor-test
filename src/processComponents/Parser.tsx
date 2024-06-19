@@ -37,6 +37,8 @@ const parser = new WebVTTParser();
 export const parseVTTFile = (fileData, idMap) => {
     mockData[0].actions = [];
 
+    let subtitleNumber = 0;
+
     let file = `${fileData}`;
 
     const tree = parser.parse(file, '');
@@ -52,7 +54,7 @@ export const parseVTTFile = (fileData, idMap) => {
             data: {
                 src: '/audio/audio.mp3',
                 name: `${data.text}`,
-                subtitleNumber: Number(data.id),
+                subtitleNumber: subtitleNumber,
                 alignment: data.alignment,
                 direction: data.direction,
                 lineAlign: data.lineAlign,
@@ -61,6 +63,7 @@ export const parseVTTFile = (fileData, idMap) => {
                 textPosition: data.textPosition,
             },
         }
+        subtitleNumber++;
         idMap[idRef] = "";
         idRef++;
         mockData[0].actions.push(newAction);

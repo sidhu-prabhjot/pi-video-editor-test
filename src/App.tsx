@@ -7,17 +7,20 @@ import './timelineStyles/index.less';
 import TimelinePlayer from './timlineComponents/player';
 import lottieControl from './timlineComponents/lottieControl';
 import {parseVTTFile, generateVtt} from './processComponents/Parser';
-import Modal from 'react-modal';
 import VideoJS from './VideoJS';
 import videojs from 'video.js';
 import Subtitle from './components/Subtitle';
-import SingleInputForm from './components/SingleInputForm';
 import DragDrop from './components/DragDrop';
 import SideListSearch from './components/SideListSearch';
 import ListItem from './components/ListItem';
 import TextSubmit from './components/TextSubmit';
 import Button from '@mui/material/Button';
 import Switch from '@mui/material/Switch';
+import EditAllModal from './components/EditAllModal';
+import AddSubtitleModal from './components/AddSubtitleModal';
+import {AutoSizer, List} from 'react-virtualized';
+import './styles/List.css';
+import './styles/Main.css';
 
 //Modal styling
 const customStyles = {
@@ -81,24 +84,36 @@ const App = () => {
             } else {
               setLine(Number(linePosition) * 3)
             }
-            setCurrentSubtitle((action as CustomTimelineAction).data.name);
+
+            listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
     
             let listElement = document.getElementById(`${(action as CustomTimelineAction).id}-list-item-container`);
+            let subtitleElement = document.getElementById("subtitle");
+
             if (listElement) {
               listElement.style.backgroundColor = "rgb(140, 186, 179)";
-              listElement.scrollIntoView();
             } else {
               console.error(`Element with id ${action.id} not found`);
+            }
+
+            setCurrentSubtitle((action as CustomTimelineAction).data.name);
+
+            if(subtitleElement) {
+              subtitleElement.style.opacity = "100";
             }
           },
           leave: ({ action }) => {
             let listElement = document.getElementById(`${(action as CustomTimelineAction).id}-list-item-container`);
+            let subtitleElement = document.getElementById("subtitle");
             if (listElement) {
-              listElement.style.backgroundColor = "rgb(201, 201, 201)";
+              listElement.style.backgroundColor = "beige";
             } else {
               console.error(`Element with id ${action.id} not found`);
             }
-            setCurrentSubtitle("");
+
+            if(subtitleElement) {
+              subtitleElement.style.opacity = "0";
+            }
           },
         },
       },
@@ -107,12 +122,9 @@ const App = () => {
   const [data, setData] = useState(mockData);
   const [list, setList] = useState([]);
   const [overlaps, setOverlaps] = useState([]);
+  const [dataChange, setDataChange] = useState([1, 2]);
 
-  //modal variables
   let subtitle;
-  const [modalIsOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-  const [endTime, setEndTime] = useState(0);
 
   //the current state of the timeline and its operations (can be manipulated)
   const timelineState = useRef<TimelineState>();
@@ -174,8 +186,6 @@ const App = () => {
 
   const handlePlayerReady = (player) => {
     playerRef.current = player;
-
-    console.log(playerRef.current);
 
     player.on('pause', () => {
       timelineState.current.pause();
@@ -244,17 +254,24 @@ const App = () => {
       let current = actions[i];
       let next = actions[i + 1];
   
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}`);
+      let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}-list-item-container`);
   
       if (current.end > next.start) {
         validExport = false;
   
-        currentElement.style.backgroundColor = "#BF0000";
-        nextElement.style.backgroundColor = "#FF4040";
+        if(currentElement) {
+          currentElement.style.backgroundColor = "#BF0000";
+        }
+
+        if(nextElement) {
+          nextElement.style.backgroundColor = "#FF4040";
+        }
         tempOverlapsArray.push([next.start, current.end]);
       } else {
-        nextElement.style.backgroundColor = "transparent";
+        if(nextElement) {
+          nextElement.style.backgroundColor = "beige";
+        }
       }
     }
   
@@ -286,18 +303,22 @@ const App = () => {
     sortActions();
   
     for (let i = 0; i < actions.length - 1; i++) {
+      tempData[0].actions[i].data.subtitleNumber = i;
       let current = actions[i];
       let next = actions[i + 1];
   
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}`);
+
+      let currentElement = document.getElementById(`${(current as CustomTimelineAction).id}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as CustomTimelineAction).id}-list-item-container`);
   
       if (current.end > next.start) {
         validExport = false;
         console.log("overlap at: ", current.end, " and ", next.start);
-  
-        currentElement.style.backgroundColor = "#BF0000";
-        nextElement.style.backgroundColor = "#FF4040";
+
+        if(currentElement.style) {
+          currentElement.style.backgroundColor = "#BF0000";
+          nextElement.style.backgroundColor = "#FF4040";
+        }
         tempOverlapsArray.push([next.start, current.end]);
   
         // Adjust next.start to resolve overlap
@@ -305,9 +326,13 @@ const App = () => {
         sortActions(); // Re-sort actions after adjustment
         i = -1; // Restart loop to re-check all actions
       } else {
-        nextElement.style.backgroundColor = "transparent";
+        if(nextElement) {
+          nextElement.style.backgroundColor = "beige";
+        }
       }
     }
+
+    tempData[0].actions[actions.length - 1].data.subtitleNumber = actions.length - 1; 
   
     if (validExport) {
       console.log("sorted actions: ", actions);
@@ -342,7 +367,6 @@ const App = () => {
       if(idMap[idRef]) {
         idRef = idRef + 1;
       } else {
-        console.log(idRef);
         inMap = false;
       }
 
@@ -357,7 +381,7 @@ const App = () => {
         data: {
           src: "/audio/bg.mp3",
           name: content,
-          subtitleNumber: 0,
+          subtitleNumber: data[0].actions.length-1,
           alignment: "",
           direction: "",
           lineAlign: "",
@@ -386,7 +410,6 @@ const App = () => {
   }
 
   const onHandleLinePositionChange = (newInput, subtitleObject) => {
-    console.log(newInput)
     if(newInput === "auto") {
       subtitleObject.data.linePosition = 100;
     } else if (!Number.isNaN(newInput)) {
@@ -409,20 +432,49 @@ const App = () => {
   //merge two subtitles together
   const onHandleMerge = (subtitleObject) => {
 
-    let mergedData = [];
+    let mergedActions = [];
+    let i = 0;
 
     //iterete through data until object is found
     let length = data[0].actions.length;
     let actions = [...data[0].actions];
-    for(let i = 0; i < length; i++) {
+    for(i; i < length - 1; i++) {
 
       if(actions[i] == subtitleObject) {
 
-        let combinedContent = `${actions[i].data.name} ${subtitleObject.data.name}`;
+        console.log("current action: ", actions[i]);
+        console.log("current subtitle object: ", subtitleObject);
+        console.log("---------------------------------------------");
 
+        let combinedContent = `${subtitleObject.data.name} ${actions[i + 1].data.name}`;
+        let startTime = subtitleObject.start;
+        let endTime = actions[i + 1].end;
+
+        let tempObject = {...subtitleObject}
+        tempObject.data.name = combinedContent;
+        tempObject.start = startTime;
+        tempObject.end = endTime;
+
+        mergedActions.push(tempObject);
+        i++;
+
+      } else {
+        mergedActions.push(actions[i]);
       }
 
     }
+
+    //merge the leftover element
+    if(i < length) {
+      mergedActions.push(actions[i]);
+    }
+
+    console.log("actions after merge: ", mergedActions);
+
+    let tempData = data;
+    tempData[0].actions = [...mergedActions];
+    setList([]);
+    setData([...tempData]);
 
   }
 
@@ -431,8 +483,25 @@ const App = () => {
     verifySubtitles();
   }
 
-  //move to the clicked subtitle on both the video player and the timeline
+  //move to the clicked subtitle on both the side list
   const handleListClick = (subtitleObject) => {
+
+    //find what index it is
+    let index=0;
+    let actions = data[0].actions;
+    for(let i = 0; i < actions.length; i++) {
+      if(actions[i] == subtitleObject) {
+        break;
+      }
+      index++;
+    }
+
+    if(listRef.current) {
+      listRef.current.scrollToRow(index);
+    } else {
+      console.log("list reference is defective");
+    }
+
     timelineState.current.setTime(subtitleObject.start);
     playerRef.current.currentTime(timelineState.current.getTime());
   }
@@ -463,38 +532,25 @@ const App = () => {
     setEditList({...tempEditList});
   }
 
-  const buildList = () => {
-    const newList = data[0].actions.map((subtitleObject) => (
-      <ListItem 
-        subtitleObject={subtitleObject} 
-        onHandleChange={onHandleChange}
-        onHandleEndTimeChange={onHandleEndTimeChange}
-        onHandleStartTimeChange={onHandleStartTimeChange}
-        onHandleLinePositionChange={onHandleLinePositionChange}
-        onSetParentData={onSetParentData}
-        addToEditList={addToEditList}
-        removeFromEditList={removeFromEditList}
-        deleteSubtitle={deleteSubtitle}
-        handleListClick={handleListClick}
-        openModal={openModal}
-        handleAlignmentChange={handleAlignmentChange}
-      />
-    ));
-    setList(newList);
-  };
-
   ///////////////////////////////////////////////////////////////// modal functions
+  const [modalIsOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [endTime, setEndTime] = useState(0);
+  const [editAllModelIsOpen, setEditAllModelIsOpen] = useState(false);
+
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
   }
 
-  const afterOpenModal = () => {
-    // references are now sync'd and can be accessed.
-    subtitle.style.color = '#f00';
+  const openEditAllModal = () => {
+    setEditAllModelIsOpen(true);
+  }
+
+  const closeEditAllModal = () => {
+    setEditAllModelIsOpen(false);
   }
 
   //add subtitle modal functions
-
   const openModal = (end:number) => {
     setIsOpen(true);
     setEndTime(end);
@@ -508,20 +564,28 @@ const App = () => {
 
   //handles the scenario when a subtitle in the timeline is clicked
   const handleActionClick = (action: CustomTimelineAction) => {
-    const listElement = document.getElementById(`${action.id}`);
-    const allListElements = document.getElementsByClassName("list-title-container") as HTMLCollectionOf<HTMLElement>;
-    for (let i = 0; i < allListElements.length; i++) {
-      allListElements[i].style.backgroundColor = "transparent";
+
+    listRef.current.scrollToRow(action.data.subtitleNumber);
+
+    const listElement = document.getElementById(`${action.id}-list-item-container`);
+    const allListElements = document.getElementsByClassName("list-item-container") as HTMLCollectionOf<HTMLElement>;
+    
+    if(allListElements) {
+      for (let i = 0; i < allListElements.length; i++) {
+        allListElements[i].style.backgroundColor = "beige!important";
+      }
     }
     
     if (listElement) {
-      listElement.scrollIntoView();
+      listRef.current.scrollToRow(action.data.subtitleNumber);
+      listElement.style.backgroundColor = "rgb(140, 186, 179)";
     }
 
     timelineState.current.setTime(action.start);
     if(playerRef.current) {
       playerRef.current.currentTime(timelineState.current.getTime());
     }
+
   }
 
   ////////////////////////////////////////////////////////////////////////////// handle submitting a link
@@ -547,19 +611,6 @@ const App = () => {
   ////////////////////////////////////////////////////////////////////////////////// handling the search bar
 
   const [searchResults, setSearchResults] = useState([]);
-
-  const handleSearchChange = (term, hits) => {
-    console.log("term: ", term, " hits: ", hits);
-    if(term.length > 1) {
-      setSearchResults(hits);
-    } else {
-      setSearchResults([]);
-    }
-  }
-
-  const handleSearchClick = () => {
-    console.log("search clicked");
-  }
 
   //get starttime from the result that was clicked
   const handleResultClick = (startTime) => {
@@ -588,8 +639,15 @@ const App = () => {
       playerRef.current.currentTime(timelineState.current.getTime());
 
     }
-    buildList();
   }, [data])
+
+  useEffect(() => {
+    // This effect will run whenever `dataChange` changes, causing a re-render
+    console.log("dataChange updated:", dataChange);
+    if (listRef.current) {
+      listRef.current.forceUpdate();
+    }
+  }, [dataChange]);
 
   useEffect(() => {
     if(timelineState.current && playerRef.current) {
@@ -610,7 +668,7 @@ const App = () => {
     console.log("alignment change: ", alignment);
   }
 
-  const tempHandleEditAllAlignmentChange = (alignment, id) => {
+  const handleAllAlignmentChange = (alignment, id) => {
     document.getElementById(`edit-all-left-align`).style.backgroundColor = "#ffffff";
     document.getElementById(`edit-all-middle-align`).style.backgroundColor = "#ffffff";
     document.getElementById(`edit-all-right-align`).style.backgroundColor = "#ffffff";
@@ -648,7 +706,6 @@ const App = () => {
 
     let tempEditList = editList;
     delete tempEditList[`${id}`];
-    console.log(tempEditList);
     setEditList({...tempEditList});
 
   }
@@ -672,13 +729,78 @@ const App = () => {
 
   }, [switchState])
 
+  const handleInsert = (endTime, inputValue) => {
+    insertSubtitle(endTime, inputValue);
+  }
+
+  function rowRenderer({
+    key, // Unique key within array of rows
+    index, // Index of row within collection
+    isScrolling, // The List is currently being scrolled
+    isVisible, // This row is visible within the List (eg it is not an overscanned row)
+    style, // Style object to be applied to row (to position it)
+  }) {
+    return (
+      <div key={key} style={style}>
+        <ListItem 
+          subtitleObject={data[0].actions[index]} 
+          onHandleChange={onHandleChange}
+          onHandleEndTimeChange={onHandleEndTimeChange}
+          onHandleStartTimeChange={onHandleStartTimeChange}
+          onHandleLinePositionChange={onHandleLinePositionChange}
+          onSetParentData={onSetParentData}
+          addToEditList={addToEditList}
+          removeFromEditList={removeFromEditList}
+          deleteSubtitle={deleteSubtitle}
+          handleListClick={handleListClick}
+          openModal={openModal}
+          handleAlignmentChange={handleAlignmentChange}
+          onHandleMerge={onHandleMerge}
+        />
+      </div>
+    );
+  }
+
+  const forceListRender = async () => {
+    let tempData = data;
+
+    const newAction : CustomTimelineAction = {   
+      id : `action${data[0].actions.length}` , 
+      start : 100,
+      end : 101 , 
+      effectId : "effect1",
+      data: {
+        src: "/audio/bg.mp3",
+        name: "hello",
+        subtitleNumber: data[0].actions.length-1,
+        alignment: "",
+        direction: "",
+        lineAlign: "",
+        linePosition: "",
+        size: 100,
+        textPosition: "",
+      } 
+    }
+
+    tempData[0].actions.push(newAction);
+    setData([...tempData]);
+
+  }
+
+  const listRef = useRef(null);
+
   return (
     <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
+      <EditAllModal isOpen={editAllModelIsOpen} onCloseModal={closeEditAllModal} handleEditAllAlignmentChange={handleAllAlignmentChange} editAllSelected={editAllSelected} handleYAlignChange={handleYAlignChange} setParentData={onSetParentData}/>
+      <div style={{zIndex: "9999"}}>
+        <AddSubtitleModal isOpen={modalIsOpen} onCloseModal={closeModal} onHandleInsert={handleInsert} endTime={endTime} subtitle={subtitle} onHandleInputChange={handleInputChange} inputValue={inputValue}/>
+      </div>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
         <div className="scroll-container">
         <div>
           <div className={"search-bar-container"}>
-            <SideListSearch dataObjects={actionData} />
+            <SideListSearch onHandleResultClick={handleResultClick} dataObjects={actionData} />
+            <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div className={"drag-drop-container"}>
               <DragDrop onVideoUpload={handleOnVideoUpload} />
             </div>
@@ -691,51 +813,21 @@ const App = () => {
             ))}
           </ul>
         </div>
-          <Modal
-              isOpen={modalIsOpen}
-              onAfterOpen={afterOpenModal}
-              onRequestClose={closeModal}
-              style={customStyles}
-              contentLabel="Example Modal"
-              ariaHideApp={false}
-          >
-            <h2 ref={(_subtitle) => (subtitle = _subtitle)}>Hello</h2>
-            <button onClick={closeModal}>close</button>
-            <div>I am a modal (END TIME: {endTime})</div>
-            <form>
-              <input type="text" value={inputValue} onChange={handleInputChange} />
-              <button onClick={() => insertSubtitle(endTime, inputValue)}>add</button>
-            </form>
-          </Modal>
           <div className="subtitle-list-container">
-            <ul style={{listStyle: "none", padding:"0px 10px 0px 10px"}}>
+            {/* <ul style={{listStyle: "none", padding:"0px 10px 0px 10px"}}>
               {list}
-            </ul>
-          </div>
-            <div className="edit-selected-container">
-              <p>Edit Selected: </p>
-              <div>
-                X-Align:
-                <button id={`edit-all-left-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
-                  tempHandleEditAllAlignmentChange("left", `edit-all-left-align`);
-                }}>Left</button>
-                <button  id={`edit-all-middle-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
-                  tempHandleEditAllAlignmentChange("center", `edit-all-middle-align`);
-                  }}>Middle</button>
-                <button  id={`edit-all-right-align`} style={{backgroundColor: "#ffffff"}} onClick={() => {
-                  tempHandleEditAllAlignmentChange("right", `edit-all-right-align`)
-                  }}>Right</button>
-              </div>
-              <div style={{display:"flex", flexDirection:"row"}}>
-                Y-Align:
-                <SingleInputForm
-                  placeholder={"-1"}
-                  handleChange={handleYAlignChange}
-                  subtitleObject={null}
-                  setParentData={onSetParentData}
-                />
-              </div>
-              <button onClick={() => editAllSelected()}>Confirm</button>
+            </ul> */}
+              <List
+              className={"list-render-container"}
+              ref={listRef}
+              width={550}
+              height={280}
+              rowCount={data[0].actions.length}
+              rowHeight={220}
+              rowRenderer={rowRenderer}
+              overscanRowCount={0}
+              {...data}
+            />
           </div>
         </div>
         <div className={"video-container"}>
@@ -769,9 +861,36 @@ const App = () => {
           editorData={data}
           effects={mockEffect}
           onChange={(data) => {
+            //need to change some state in list to make it update
             console.log("data changed: ", data);
-            setData(data as CusTomTimelineRow[]);
+            setData([...data as CusTomTimelineRow[]]);
             verifySubtitles();
+          }}
+          onActionMoveEnd={(action) => {
+            let usableAction = action.action;
+            const update = async (usableAction) => {
+              console.log("usable action data", usableAction.data);
+              await listRef.current.scrollToRow(data[0].actions.length - 1);
+              await listRef.current.scrollToRow(usableAction.data.subtitleNumber);
+            }
+            update(usableAction);
+            timelineState.current.setTime(action.start);
+            if(playerRef.current) {
+              playerRef.current.currentTime(timelineState.current.getTime());
+            }
+          }}
+          onActionResizeEnd={(action) => {
+            let usableAction = action.action;
+            const update = async (usableAction) => {
+              console.log("usable action data", usableAction.data);
+              await listRef.current.scrollToRow(data[0].actions.length - 1);
+              await listRef.current.scrollToRow(usableAction.data.subtitleNumber);
+            }
+            update(usableAction);
+            timelineState.current.setTime(action.start);
+            if(playerRef.current) {
+              playerRef.current.currentTime(timelineState.current.getTime());
+            }
           }}
           getActionRender={(action, row) => {
             if (action.effectId === 'effect0') {

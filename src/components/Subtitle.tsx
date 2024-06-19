@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../styles/Main.css';
 
 type SubtitleProps = {
     currentSubtitle: string;
@@ -9,7 +10,7 @@ type SubtitleProps = {
 const Subtitle: React.FC<SubtitleProps> = ({ currentSubtitle, alignment, linePosition }) => {
 
     return (
-        <div style={{display: "flex", width: "95%", top:"0", paddingLeft: "10px", paddingRight: "10px", position: "absolute", zIndex:"999999", justifyContent: `${alignment}`, marginTop: `${linePosition}px`}}>
+        <div id={"subtitle"} style={{display: "flex", width: "95%", top:"0", paddingLeft: "10px", paddingRight: "10px", position: "absolute", zIndex:"1", justifyContent: `${alignment}`, marginTop: `${linePosition}px`}}>
             {currentSubtitle !== "" ? <p style={{color:"#ffffff", marginTop: "0", backgroundColor: "#000000", padding:"2px"}}>{currentSubtitle}</p> : <p></p>}
         </div>
     );
