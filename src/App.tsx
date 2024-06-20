@@ -1,6 +1,5 @@
-import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow, TimelineEngine} from '@xzdarcy/react-timeline-editor';
+import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
 import { cloneDeep } from 'lodash';
-import _remove from 'lodash/remove';
 import { useRef, useState, useEffect } from 'react';
 import { CustomRender0, CustomRender1} from './timlineComponents/custom';
 import './timelineStyles/index.less';
@@ -18,27 +17,16 @@ import Button from '@mui/material/Button';
 import Switch from '@mui/material/Switch';
 import EditAllModal from './components/EditAllModal';
 import AddSubtitleModal from './components/AddSubtitleModal';
-import {AutoSizer, List} from 'react-virtualized';
+import {List} from 'react-virtualized';
 import './styles/List.css';
 import './styles/Main.css';
 
-//Modal styling
-const customStyles = {
-  content: {
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-  },
-};
+///////////////////////////////////////////////////////////////////////////// data control
 
-/////////////////////////////////////////////////////////////////////////////data control
-
-const scaleWidth = 100;
-const startLeft = 20;
-// const scaleSplitCount = 6;
+//the data structure for an entire row in the timeline
+interface CusTomTimelineRow extends TimelineRow {
+  actions: CustomTimelineAction[];
+}
 
 //defines the properties of a subtitle object in the timeline
 interface CustomTimelineAction extends TimelineAction {
@@ -55,81 +43,29 @@ interface CustomTimelineAction extends TimelineAction {
   };
 }
 
-//the data structure for an entire row in the timeline
-interface CusTomTimelineRow extends TimelineRow {
-  actions: CustomTimelineAction[];
-}
+/////////////////////////////////////////////////////////////////////////////////////////// initialization
 
 //all the data that exists in a SINGLE timeline row (moved outside component to prevent multiple calls)
 const mockData: CusTomTimelineRow[] = parseVTTFile("", {});
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
-
 const App = () => {
-
-    const [currentSubtitle, setCurrentSubtitle] = useState("");
-
-    const mockEffect: Record<string, TimelineEffect> = {
-      effect1: {
-        id: 'effect1',
-        name: 'effect1',
-        source: {
-          enter: ({ action, time }) => {
-            const src = (action as CustomTimelineAction).data.src;
-            lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
-            setAlignment((action as CustomTimelineAction).data.alignment);
-            let linePosition = (action as CustomTimelineAction).data.linePosition;
-            if(linePosition == "auto") {
-              setLine(300);
-            } else {
-              setLine(Number(linePosition) * 3)
-            }
-
-            listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
-    
-            let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-            let subtitleElement = document.getElementById("subtitle");
-
-            if (listElement) {
-              listElement.style.backgroundColor = "rgb(140, 186, 179)";
-            } else {
-              console.error(`Element with id ${action.id} not found`);
-            }
-
-            setCurrentSubtitle((action as CustomTimelineAction).data.name);
-
-            if(subtitleElement) {
-              subtitleElement.style.opacity = "100";
-            }
-          },
-          leave: ({ action }) => {
-            let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-            let subtitleElement = document.getElementById("subtitle");
-            if (listElement) {
-              listElement.style.backgroundColor = "beige";
-            } else {
-              console.error(`Element with id ${action.id} not found`);
-            }
-
-            if(subtitleElement) {
-              subtitleElement.style.opacity = "0";
-            }
-          },
-        },
-      },
-    };    
-
-  const [data, setData] = useState(mockData);
-  const [list, setList] = useState([]);
-  const [overlaps, setOverlaps] = useState([]);
-  const [dataChange, setDataChange] = useState([1, 2]);
 
   let subtitle;
 
+  //REFS:
   //the current state of the timeline and its operations (can be manipulated)
   const timelineState = useRef<TimelineState>();
   const playerPanel = useRef<HTMLDivElement>(null);
   const autoScrollWhenPlay = useRef<boolean>(true);
+  const playerRef = useRef(null);
+  const listRef = useRef(null);
+
+  //STATE MANAGEMENT:
+  const [currentSubtitle, setCurrentSubtitle] = useState("");
+  const [data, setData] = useState(mockData);
+  const [overlaps, setOverlaps] = useState([]);
+
+  //track IDs
   const [idMap, setIdMap] = useState({});
 
   //handling link inserts for the video
@@ -137,6 +73,7 @@ const App = () => {
 
   //search bar related states
   const [actionData, setActionData] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
 
   //subtitle positioning:
   const [alignment, setAlignment] = useState("center");
@@ -151,39 +88,79 @@ const App = () => {
   const [editList, setEditList] = useState({});
   const [alignmentEdit, setAlignmentEdit] = useState(null);
   const [lineEdit, setLineEdit] = useState(-1);
-  const [contentEdit, setContentEdit] = useState("");
 
+  //modal state management, primarily for opening and closing
+  const [modalIsOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [endTime, setEndTime] = useState(0);
+  const [editAllModelIsOpen, setEditAllModelIsOpen] = useState(false);
 
-  ///////////////////////////////////////////////////////// videojs player
+  //button and switch toggling states
+  const [switchState, setSwitchState] = useState(true);
 
-  const handleOnVideoUpload = (fileObject) => {
+  ///////////////////////////////////////////////////////////////////////////////////////// component setup
 
-    // Initialize a FileReader
-    const reader = new FileReader();
+  //TIMELINE
+  //timeline behaviour editing
+  const mockEffect: Record<string, TimelineEffect> = {
+    effect1: {
+      id: 'effect1',
+      name: 'effect1',
+      source: {
+        enter: ({ action, time }) => {
+          const src = (action as CustomTimelineAction).data.src;
+          setAlignment((action as CustomTimelineAction).data.alignment);
 
-    let tempIdMap = {};
-    
-    // Define what happens when the file is read successfully
-    reader.onload = (event) => {
-      let result = parseVTTFile(reader.result, tempIdMap);
-      console.log("parsing result: ", result);
-      setData([...result]);
-    };
-    
-    // Read the file as text
-    reader.readAsText(fileObject, 'UTF-8');
-  };
-  
+          let linePosition = (action as CustomTimelineAction).data.linePosition;
+          if(linePosition === "auto") {
+            setLine(300);
+          } else {
+            setLine(Number(linePosition) * 3)
+          }
 
-  const playerRef = useRef(null);
+          listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
 
-  const videoJsOptions = {
-    autoplay: false,
-    controls: true,
-    responsive: true,
-    fluid: true,
-  };
+          let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+          let subtitleElement = document.getElementById("subtitle");
 
+          //color update
+          if (listElement) {
+            listElement.style.backgroundColor = "rgb(140, 186, 179)";
+          } else {
+            console.error(`Element with id ${action.id} not found`);
+          }
+
+          //update timeline and current subtitle
+          lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
+          setCurrentSubtitle((action as CustomTimelineAction).data.name);
+
+          //make subtitle visible
+          if(subtitleElement) {
+            subtitleElement.style.opacity = "100";
+          }
+        },
+        leave: ({ action }) => {
+          let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+          let subtitleElement = document.getElementById("subtitle");
+          
+          //change color
+          if (listElement) {
+            listElement.style.backgroundColor = "beige";
+          } else {
+            console.error(`Element with id ${action.id} not found`);
+          }
+
+          //make subtitle invisible
+          if(subtitleElement) {
+            subtitleElement.style.opacity = "0";
+          }
+        },
+      },
+    },
+  };    
+
+  //VIDEOJS
+  //defining video player responses to events
   const handlePlayerReady = (player) => {
     playerRef.current = player;
 
@@ -207,159 +184,17 @@ const App = () => {
     });
   };
 
-  //////////////////////////////////////////////////////// managing sidelist
-
-  //deleting from the entire dataset
-  const deleteSubtitle = async (action) => {
-
-    if(data[0].actions.length > 1) {
-      const tempArray = data;
-
-      tempArray[0].actions.splice(action.data.subtitleNumber, 1);
-
-      const update = async (action) => {
-        await listRef.current.scrollToRow(data[0].actions.length - 1);
-        await listRef.current.scrollToRow(action.data.subtitleNumber);
-      }
-      update(action);
-  
-      setData([...tempArray]);
-      verifySubtitles();
-    }
-
-  }
-
-  //download the vtt file
-  const downloadVTTFile = (generatedString) => {
-    const element = document.createElement("a");
-    const file = new Blob([generatedString], {type: 'text/plain'});
-    element.href = URL.createObjectURL(file);
-    element.download = "exported_subtitles.vtt";
-    document.body.appendChild(element); // Required for this to work in FireFox
-    element.click();
-  }
-
-  //call verifier and then generate vtt to export
-  const generateVTT = () => {
-    if(verifySubtitlesForExport()) {
-      let generatedString = generateVtt(data);
-      downloadVTTFile(generatedString);
-    }
-  }
-
-  const verifySubtitlesForExport = () => {
-
-    let tempOverlapsArray = [];
-    let validExport = true;
-    let tempData = cloneDeep(data);
-    let actions = tempData[0].actions;
-  
-    for (let i = 0; i < actions.length - 1; i++) {
-      let current = actions[i];
-      let next = actions[i + 1];
-  
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-  
-      if (current.end > next.start) {
-        validExport = false;
-  
-        if(currentElement) {
-          currentElement.style.backgroundColor = "#BF0000";
-        }
-
-        if(nextElement) {
-          nextElement.style.backgroundColor = "#FF4040";
-        }
-        tempOverlapsArray.push([next.start, current.end]);
-      } else {
-        if(nextElement) {
-          nextElement.style.backgroundColor = "beige";
-        }
-      }
-    }
-  
-    if (validExport) {
-      return true;
-    } else {
-      console.log("invalid vtt, found overlapping subtitles");
-      setOverlaps([...tempOverlapsArray]);
-      tempData[0].actions = [...actions];
-      setData([...tempData]);
-    }
-  
-    return false;
+  //defining video player features
+  const videoJsOptions = {
+    autoplay: false,
+    controls: true,
+    responsive: true,
+    fluid: true,
   };
 
-  const verifySubtitles = () => {
-    let tempOverlapsArray = [];
-    let validExport = true;
-    let tempData = cloneDeep(data);
-    let actions = tempData[0].actions;
-  
-    // Function to sort actions by their start time
-    const sortActions = () => {
-      actions.sort((a, b) => a.start - b.start);
-    };
-  
-    // Sort actions initially
-    sortActions();
+  ///////////////////////////////////////////////////////////////////// subtitle dataset manipulation
 
-    for (let i = 0; i < actions.length; i++) {
-      actions[i].data.subtitleNumber = i;
-    }
-
-  
-    for (let i = 0; i < actions.length - 1; i++) {
-      tempData[0].actions[i].data.subtitleNumber = i;
-      let current = actions[i];
-      let next = actions[i + 1];
-  
-
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-  
-      if (current.end > next.start) {
-        validExport = false;
-        console.log("overlap at: ", current.end, " and ", next.start);
-
-        if(currentElement) {
-          currentElement.style.backgroundColor = "#BF0000";
-          nextElement.style.backgroundColor = "#FF4040";
-        }
-        tempOverlapsArray.push([next.start, current.end]);
-  
-        // Adjust next.start to resolve overlap
-        next.start = current.end; // or any other appropriate adjustment
-        sortActions(); // Re-sort actions after adjustment
-        i = -1; // Restart loop to re-check all actions
-      } else {
-        if(nextElement) {
-          nextElement.style.backgroundColor = "beige";
-        }
-      }
-    }
-
-    tempData[0].actions[actions.length - 1].data.subtitleNumber = actions.length - 1; 
-  
-    if (validExport) {
-      console.log("sorted actions: ", actions);
-      tempData[0].actions = [...actions];
-      setData([...tempData]);
-      return true;
-    } else {
-      console.log("invalid vtt, found overlapping subtitles");
-      console.log("sorted actions: ", actions);
-      setOverlaps([...tempOverlapsArray]);
-      tempData[0].actions = [...actions];
-      setData([...tempData]);
-    }
-
-    return false;
-  };
-  
-
-  //for inserting a subtitle through the side subtitle list
+  //for inserting a subtitle to the dataset
   const insertSubtitle = (previousEndTime: number, content: string) => {
 
     closeModal();
@@ -389,11 +224,11 @@ const App = () => {
         data: {
           src: "/audio/bg.mp3",
           name: content,
-          subtitleNumber: data[0].actions.length-1,
-          alignment: "",
+          subtitleNumber: data[0].actions.length - 1,
+          alignment: "center",
           direction: "",
           lineAlign: "",
-          linePosition: "",
+          linePosition: "auto",
           size: 100,
           textPosition: "",
         } 
@@ -413,28 +248,20 @@ const App = () => {
 
   }
 
-  const onHandleChange = (newInput, subtitleObject) => {
-    subtitleObject.data.name = newInput;
-  }
+  //deleting from the entire dataset
+  const deleteSubtitle = async (action) => {
 
-  const onHandleLinePositionChange = (newInput, subtitleObject) => {
-    if(newInput === "auto") {
-      subtitleObject.data.linePosition = 100;
-    } else if (!Number.isNaN(newInput)) {
-      subtitleObject.data.linePosition = Number(newInput);
-    }
-  }
+    if(data[0].actions.length > 1) {
+      const tempArray = data;
 
-  const onHandleStartTimeChange = (newInput, subtitleObject) => {
-    if(newInput) {
-      subtitleObject.start = Number(newInput);
-    }
-  }
+      tempArray[0].actions.splice(action.data.subtitleNumber, 1);
 
-  const onHandleEndTimeChange = (newInput, subtitleObject) => {
-    if(newInput) {
-      subtitleObject.end = Number(newInput);
+      update(action);
+  
+      setData([...tempArray]);
+      verifySubtitles();
     }
+
   }
 
   //merge two subtitles together
@@ -472,6 +299,10 @@ const App = () => {
 
     }
 
+    const update = async () => {
+      await listRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
+    } 
+
     //merge the leftover element
     if(i < length) {
       mergedActions.push(actions[i]);
@@ -481,37 +312,86 @@ const App = () => {
 
     let tempData = data;
     tempData[0].actions = [...mergedActions];
-    setList([]);
     setData([...tempData]);
 
+    update();
+
   }
 
-  const onSetParentData = () => {
-    setData([...data]);
-    verifySubtitles();
-  }
+  // Function to sort actions by their start time
+  const sortActions = (actions) => {
+    actions.sort((a, b) => a.start - b.start);
+  };
 
-  //move to the clicked subtitle on both the side list
-  const handleListClick = (subtitleObject) => {
+  const verifySubtitles = () => {
+    let tempOverlapsArray = [];
+    let validExport = true;
+    let tempData = cloneDeep(data);
+    let actions = tempData[0].actions;
+  
+    // Sort actions initially
+    sortActions(actions);
 
-    //find what index it is
-    let index=0;
-    let actions = data[0].actions;
-    for(let i = 0; i < actions.length; i++) {
-      if(actions[i] == subtitleObject) {
-        break;
+    for (let i = 0; i < actions.length; i++) {
+      actions[i].data.subtitleNumber = i;
+    }
+
+  
+    for (let i = 0; i < actions.length - 1; i++) {
+      tempData[0].actions[i].data.subtitleNumber = i;
+      let current = actions[i];
+      let next = actions[i + 1];
+  
+
+      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+  
+      if (current.end > next.start) {
+        validExport = false;
+        console.log("overlap at: ", current.end, " and ", next.start);
+
+        if(currentElement) {
+          currentElement.style.backgroundColor = "#BF0000";
+          nextElement.style.backgroundColor = "#FF4040";
+        }
+        tempOverlapsArray.push([next.start, current.end]);
+  
+        // Adjust next.start to resolve overlap
+        next.start = current.end; // or any other appropriate adjustment
+        sortActions(actions); // Re-sort actions after adjustment
+        i = -1; // Restart loop to re-check all actions
+      } else {
+        if(nextElement) {
+          nextElement.style.backgroundColor = "beige";
+        }
       }
-      index++;
     }
 
-    if(listRef.current) {
-      listRef.current.scrollToRow(index);
+    tempData[0].actions[actions.length - 1].data.subtitleNumber = actions.length - 1; 
+  
+    if (validExport) {
+      console.log("sorted actions: ", actions);
+      tempData[0].actions = [...actions];
+      setData([...tempData]);
+      return true;
     } else {
-      console.log("list reference is defective");
+      console.log("invalid vtt, found overlapping subtitles");
+      console.log("sorted actions: ", actions);
+      setOverlaps([...tempOverlapsArray]);
+      tempData[0].actions = [...actions];
+      setData([...tempData]);
     }
 
-    timelineState.current.setTime(subtitleObject.start);
-    playerRef.current.currentTime(timelineState.current.getTime());
+    return false;
+  };
+
+  //////////////////////////////////////////////////////////////////////// editing a specific subtitle
+
+  const addToEditList = (subtitleObject) => {
+    let tempEditList = editList;
+    tempEditList[subtitleObject.data.subtitleNumber] = subtitleObject.data;
+    console.log("edit list: ", tempEditList);
+    setEditList({...tempEditList});
   }
 
   const handleAlignmentChange = (subtitleObject, alignment) => {
@@ -521,151 +401,15 @@ const App = () => {
     console.log("alignment change: ", alignment);
   }
 
-  //align the element on the screen according to what data was parsed
-  const tempHandleAlignmentChange = (subtitleObject, alignment, id) => {
-    subtitleObject.data.alignment = alignment;
-    document.getElementById(`left-align-${subtitleObject.data.subtitleNumber}`).style.backgroundColor = "#ffffff";
-    document.getElementById(`middle-align-${subtitleObject.data.subtitleNumber}`).style.backgroundColor = "#ffffff";
-    document.getElementById(`right-align-${subtitleObject.data.subtitleNumber}`).style.backgroundColor = "#ffffff";
-    document.getElementById(id).style.backgroundColor = "#7F7979";
-    setData([...data]);
-
-    console.log("alignment change: ", alignment);
-  }
-
-  const addToEditList = (subtitleObject) => {
-    let tempEditList = editList;
-    tempEditList[subtitleObject.data.subtitleNumber] = subtitleObject.data;
-    console.log("edit list: ", tempEditList);
-    setEditList({...tempEditList});
-  }
-
-  ///////////////////////////////////////////////////////////////// modal functions
-  const [modalIsOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-  const [endTime, setEndTime] = useState(0);
-  const [editAllModelIsOpen, setEditAllModelIsOpen] = useState(false);
-
-  const handleInputChange = (event) => {
-    setInputValue(event.target.value);
-  }
-
-  const openEditAllModal = () => {
-    setEditAllModelIsOpen(true);
-  }
-
-  const closeEditAllModal = () => {
-    setEditAllModelIsOpen(false);
-  }
-
-  //add subtitle modal functions
-  const openModal = (end:number) => {
-    setIsOpen(true);
-    setEndTime(end);
-  }
-
-  const closeModal = () => {
-    setIsOpen(false);
-  }
-
-  //////////////////////////////////////////////////////////////////////////// handle clicking on subtitle in timeline
-
-  //handles the scenario when a subtitle in the timeline is clicked
-  const handleActionClick = (action: CustomTimelineAction) => {
-
-    listRef.current.scrollToRow(action.data.subtitleNumber);
-
-    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
-    const allListElements = document.getElementsByClassName("list-item-container") as HTMLCollectionOf<HTMLElement>;
-    
-    if(allListElements) {
-      for (let i = 0; i < allListElements.length; i++) {
-        allListElements[i].style.backgroundColor = "beige!important";
-      }
+  const onHandleLinePositionChange = (newInput, subtitleObject) => {
+    if(newInput === "auto") {
+      subtitleObject.data.linePosition = 100;
+    } else if (!Number.isNaN(newInput)) {
+      subtitleObject.data.linePosition = Number(newInput);
     }
-    
-    if (listElement) {
-      listRef.current.scrollToRow(action.data.subtitleNumber);
-      listElement.style.backgroundColor = "rgb(140, 186, 179)";
-    }
-
-    timelineState.current.setTime(action.start);
-    if(playerRef.current) {
-      playerRef.current.currentTime(timelineState.current.getTime());
-    }
-
   }
 
-  ////////////////////////////////////////////////////////////////////////////// handle submitting a link
-
-  const [videoSrc, setVideoSrc] = useState("");
-
-  const handleLinkSubmit = (event) => {
-    event.preventDefault(); // Prevent the default form submission
-    if (playerRef.current) {
-      console.log("Updating video source to:", linkInputValue);
-      playerRef.current.src({ src: linkInputValue, type: 'video/mp4' });
-      playerRef.current.load(); // Ensure the player reloads the new source
-      setVideoSrc(linkInputValue); // Update the state
-    } else {
-      console.error("Player reference is not set");
-    }
-  };
-
-  const handleLinkInputChange = (event) => {
-    setLinkInputValue(event.target.value);
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////// handling the search bar
-
-  const [searchResults, setSearchResults] = useState([]);
-
-  //get starttime from the result that was clicked
-  const handleResultClick = (startTime) => {
-    timelineState.current.setTime(startTime);
-    playerRef.current.currentTime(timelineState.current.getTime());
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////////////
-
-  useEffect(() => {
-    console.log("current dataset: ", data);
-    let tempActionData = [];
-    data[0].actions.forEach(action => {
-      let searchObject = {
-        startTime: action.start,
-        endTime: action.end,
-        actionId: action.id,
-        content: action.data.name,
-        subtitleNumber: action.data.subtitleNumber,
-      }
-      tempActionData.push(searchObject);
-    })
-    setActionData([...tempActionData]);
-    if(timelineState.current && playerRef.current) {
-
-      playerRef.current.currentTime(timelineState.current.getTime());
-
-    }
-  }, [data])
-
-  useEffect(() => {
-    // This effect will run whenever `dataChange` changes, causing a re-render
-    console.log("dataChange updated:", dataChange);
-    if (listRef.current) {
-      listRef.current.forceUpdate();
-    }
-  }, [dataChange]);
-
-  useEffect(() => {
-    if(timelineState.current && playerRef.current) {
-
-      timelineState.current.setTime(playerRef.current.currentTime());
-
-    } 
-  })
-
-  ///////////////////////////////////////////////////////////////////for the edit all/all selected functionality
+  //for the edit all/all selected functionality
   const handleYAlignChange = (newLine) => {
     setLineEdit(newLine);
   }
@@ -718,7 +462,120 @@ const App = () => {
 
   }
 
-  const [switchState, setSwitchState] = useState(true);
+  ////////////////////////////////////////////////////////////////////// exporting subtitles
+
+  const verifySubtitlesForExport = () => {
+
+    let tempOverlapsArray = [];
+    let validExport = true;
+    let tempData = cloneDeep(data);
+    let actions = tempData[0].actions;
+  
+    for (let i = 0; i < actions.length - 1; i++) {
+      let current = actions[i];
+      let next = actions[i + 1];
+  
+      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+  
+      if (current.end > next.start) {
+        validExport = false;
+  
+        if(currentElement) {
+          currentElement.style.backgroundColor = "#BF0000";
+        }
+
+        if(nextElement) {
+          nextElement.style.backgroundColor = "#FF4040";
+        }
+        tempOverlapsArray.push([next.start, current.end]);
+      } else {
+        if(nextElement) {
+          nextElement.style.backgroundColor = "beige";
+        }
+      }
+    }
+  
+    if (validExport) {
+      return true;
+    } else {
+      console.log("invalid vtt, found overlapping subtitles");
+      setOverlaps([...tempOverlapsArray]);
+      tempData[0].actions = [...actions];
+      setData([...tempData]);
+    }
+  
+    return false;
+  };
+
+  //call verifier and then generate vtt to export
+  const generateVTT = () => {
+    if(verifySubtitlesForExport()) {
+      let generatedString = generateVtt(data);
+      downloadVTTFile(generatedString);
+    }
+  }
+
+  //download the vtt file
+  const downloadVTTFile = (generatedString) => {
+    const element = document.createElement("a");
+    const file = new Blob([generatedString], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = "exported_subtitles.vtt";
+    document.body.appendChild(element); // Required for this to work in FireFox
+    element.click();
+  }
+
+  ////////////////////////////////////////////////////////////////////handle screen clicks and actions
+
+  //move to the clicked subtitle on both the side list
+  const handleListClick = (subtitleObject) => {
+
+    //find what index it is
+    let index=0;
+    let actions = data[0].actions;
+    for(let i = 0; i < actions.length; i++) {
+      if(actions[i] == subtitleObject) {
+        break;
+      }
+      index++;
+    }
+
+    if(listRef.current) {
+      listRef.current.scrollToRow(index);
+    } else {
+      console.log("list reference is defective");
+    }
+
+    timelineState.current.setTime(subtitleObject.start);
+    playerRef.current.currentTime(timelineState.current.getTime());
+  }
+
+  //handles the scenario when a subtitle in the timeline is clicked
+  const handleActionClick = (action: CustomTimelineAction) => {
+
+    listRef.current.scrollToRow(action.data.subtitleNumber);
+
+    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
+    const allListElements = document.getElementsByClassName("list-item-container") as HTMLCollectionOf<HTMLElement>;
+    
+    if(allListElements) {
+      for (let i = 0; i < allListElements.length; i++) {
+        allListElements[i].style.backgroundColor = "beige!important";
+      }
+    }
+    
+    if (listElement) {
+      listRef.current.scrollToRow(action.data.subtitleNumber);
+      listElement.style.backgroundColor = "rgb(140, 186, 179)";
+    }
+
+    timelineState.current.setTime(action.start);
+    if(playerRef.current) {
+      playerRef.current.currentTime(timelineState.current.getTime());
+    }
+
+  }
 
   const toggleAutoScroll = () => {
     if(switchState) {
@@ -727,6 +584,133 @@ const App = () => {
       setSwitchState(true);
     }
   }
+
+  const handleLinkSubmit = (event) => {
+    event.preventDefault(); // Prevent the default form submission
+    if (playerRef.current) {
+      console.log("Updating video source to:", linkInputValue);
+      playerRef.current.src({ src: linkInputValue, type: 'video/mp4' });
+      playerRef.current.load(); // Ensure the player reloads the new source
+    } else {
+      console.error("Player reference is not set");
+    }
+  };
+
+  const handleLinkInputChange = (event) => {
+    setLinkInputValue(event.target.value);
+  }
+
+  const handleOnVideoUpload = (fileObject) => {
+
+    // Initialize a FileReader
+    const reader = new FileReader();
+
+    let tempIdMap = {};
+    
+    // Define what happens when the file is read successfully
+    reader.onload = (event) => {
+      let result = parseVTTFile(reader.result, tempIdMap);
+      console.log("parsing result: ", result);
+      setData([...result]);
+    };
+    
+    // Read the file as text
+    reader.readAsText(fileObject, 'UTF-8');
+  };
+
+  //get starttime from the result that was clicked
+  const handleResultClick = (startTime) => {
+    timelineState.current.setTime(startTime);
+    playerRef.current.currentTime(timelineState.current.getTime());
+  }
+
+
+  //////////////////////////////////////////////////////// component prop functions
+
+  const handleChange = (newInput, subtitleObject) => {
+    subtitleObject.data.name = newInput;
+  }
+
+  const handleStartTimeChange = (newInput, subtitleObject) => {
+    if(newInput) {
+      subtitleObject.start = Number(newInput);
+    }
+  }
+
+  const handleEndTimeChange = (newInput, subtitleObject) => {
+    if(newInput) {
+      subtitleObject.end = Number(newInput);
+    }
+  }
+
+  const onSetParentData = () => {
+    setData([...data]);
+    verifySubtitles();
+  }
+
+  //MODAL
+  const handleInputChange = (event) => {
+    setInputValue(event.target.value);
+  }
+
+
+  ///////////////////////////////////////////////////////////////// modal functions
+
+  const openEditAllModal = () => {
+    setEditAllModelIsOpen(true);
+  }
+
+  const closeEditAllModal = () => {
+    setEditAllModelIsOpen(false);
+  }
+
+  //add subtitle modal functions
+  const openModal = (end:number) => {
+    setIsOpen(true);
+    setEndTime(end);
+  }
+
+  const closeModal = () => {
+    setIsOpen(false);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////// other helper functions
+
+  const update = async (action) => {
+    await listRef.current.scrollToRow(data[0].actions.length - 1);
+    await listRef.current.scrollToRow(action.data.subtitleNumber);
+  }
+
+  //////////////////////////////////////////////////////////////////////////// React hooks utilization
+
+  useEffect(() => {
+    console.log("current dataset: ", data);
+    let tempActionData = [];
+    data[0].actions.forEach(action => {
+      let searchObject = {
+        startTime: action.start,
+        endTime: action.end,
+        actionId: action.id,
+        content: action.data.name,
+        subtitleNumber: action.data.subtitleNumber,
+      }
+      tempActionData.push(searchObject);
+    })
+    setActionData([...tempActionData]);
+    if(timelineState.current && playerRef.current) {
+
+      playerRef.current.currentTime(timelineState.current.getTime());
+
+    }
+  }, [data])
+
+  useEffect(() => {
+    if(timelineState.current && playerRef.current) {
+
+      timelineState.current.setTime(playerRef.current.currentTime());
+
+    } 
+  })
 
   useEffect(() => {
     if(switchState) {
@@ -737,24 +721,20 @@ const App = () => {
 
   }, [switchState])
 
-  const handleInsert = (endTime, inputValue) => {
-    insertSubtitle(endTime, inputValue);
-  }
+  ///////////////////////////////////////////////////////////////// rendering functions
 
   function rowRenderer({
     key, // Unique key within array of rows
     index, // Index of row within collection
-    isScrolling, // The List is currently being scrolled
-    isVisible, // This row is visible within the List (eg it is not an overscanned row)
     style, // Style object to be applied to row (to position it)
   }) {
     return (
       <div key={key} style={style}>
         <ListItem 
           subtitleObject={data[0].actions[index]} 
-          onHandleChange={onHandleChange}
-          onHandleEndTimeChange={onHandleEndTimeChange}
-          onHandleStartTimeChange={onHandleStartTimeChange}
+          onHandleChange={handleChange}
+          onHandleEndTimeChange={handleEndTimeChange}
+          onHandleStartTimeChange={handleStartTimeChange}
           onHandleLinePositionChange={onHandleLinePositionChange}
           onSetParentData={onSetParentData}
           addToEditList={addToEditList}
@@ -769,46 +749,18 @@ const App = () => {
     );
   }
 
-  const forceListRender = async () => {
-    let tempData = data;
-
-    const newAction : CustomTimelineAction = {   
-      id : `action${data[0].actions.length}` , 
-      start : 100,
-      end : 101 , 
-      effectId : "effect1",
-      data: {
-        src: "/audio/bg.mp3",
-        name: "hello",
-        subtitleNumber: data[0].actions.length-1,
-        alignment: "",
-        direction: "",
-        lineAlign: "",
-        linePosition: "",
-        size: 100,
-        textPosition: "",
-      } 
-    }
-
-    tempData[0].actions.push(newAction);
-    setData([...tempData]);
-
-  }
-
-  const listRef = useRef(null);
-
   return (
     <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
-      <EditAllModal isOpen={editAllModelIsOpen} onCloseModal={closeEditAllModal} handleEditAllAlignmentChange={handleAllAlignmentChange} editAllSelected={editAllSelected} handleYAlignChange={handleYAlignChange} setParentData={onSetParentData}/>
+      <EditAllModal isOpen={editAllModelIsOpen} onCloseModal={closeEditAllModal} handleEditAllAlignmentChange={handleEditAllAlignmentChange} editAllSelected={editAllSelected} handleYAlignChange={handleYAlignChange} setParentData={onSetParentData}/>
       <div style={{zIndex: "9999"}}>
-        <AddSubtitleModal isOpen={modalIsOpen} onCloseModal={closeModal} onHandleInsert={handleInsert} endTime={endTime} subtitle={subtitle} onHandleInputChange={handleInputChange} inputValue={inputValue}/>
+        <AddSubtitleModal isOpen={modalIsOpen} onCloseModal={closeModal} onHandleInsert={insertSubtitle} endTime={endTime} subtitle={subtitle} onHandleInputChange={handleInputChange} inputValue={inputValue}/>
       </div>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
         <div className="scroll-container">
         <div>
           <div className={"search-bar-container"}>
             <SideListSearch onHandleResultClick={handleResultClick} dataObjects={actionData} />
-            <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
+            <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div className={"drag-drop-container"}>
               <DragDrop onVideoUpload={handleOnVideoUpload} />
             </div>
@@ -822,9 +774,6 @@ const App = () => {
           </ul>
         </div>
           <div className="subtitle-list-container">
-            {/* <ul style={{listStyle: "none", padding:"0px 10px 0px 10px"}}>
-              {list}
-            </ul> */}
               <List
               className={"list-render-container"}
               ref={listRef}
@@ -833,7 +782,7 @@ const App = () => {
               rowCount={data[0].actions.length}
               rowHeight={220}
               rowRenderer={rowRenderer}
-              overscanRowCount={2}
+              overscanRowCount={5}
               {...data}
             />
           </div>
@@ -863,7 +812,7 @@ const App = () => {
           scale={zoom}
           scaleSplitCount={scaleSplit}
           scaleWidth={timelineWidth}
-          startLeft={startLeft}
+          startLeft={20}
           autoScroll={true}
           ref={timelineState}
           editorData={data}
@@ -881,20 +830,10 @@ const App = () => {
               playerRef.current.currentTime(timelineState.current.getTime());
             }
             verifySubtitles();
-            const update = async (usableAction) => {
-              console.log("usable action data", usableAction.data);
-              await listRef.current.scrollToRow(data[0].actions.length - 1);
-              await listRef.current.scrollToRow(usableAction.data.subtitleNumber);
-            }
             update(usableAction);
           }}
           onActionResizeEnd={(action) => {
             let usableAction = action.action;
-            const update = async (usableAction) => {
-              console.log("usable action data", usableAction.data);
-              await listRef.current.scrollToRow(data[0].actions.length - 1);
-              await listRef.current.scrollToRow(usableAction.data.subtitleNumber);
-            }
             update(usableAction);
             timelineState.current.setTime(action.start);
             if(playerRef.current) {

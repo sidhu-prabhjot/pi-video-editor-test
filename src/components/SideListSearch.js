@@ -14,7 +14,7 @@ const SideListSearch = ({ dataObjects, onHandleResultClick }) => {
 
     return (
         <div className="search-bar-container">
-            <Stack spacing={2} sx={{ width: 300 }}>
+            <Stack spacing={2} sx={{ width: 250 }}>
                 <Autocomplete
                     className="search-bar"
                     id="free-solo-demo"
