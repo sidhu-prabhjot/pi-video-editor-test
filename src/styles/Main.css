@@ -25,22 +25,27 @@
 
 .search-bar-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-evenly;
     align-items: center;
-    padding: 8px 0px 0px 8px;
+    padding: 8px 0px 0px 0px;
 }
 
 #free-solo-demo {
-    font-size: 12px;
+    font-size: 14px;
 }
 
-.search-bar-container .toolbar-container {
+.toolbar-container {
     padding: 8px 8px 0px 8px;
 }
 
 .subtitle-list-container {
     overflow-y: hidden;
-    padding: 0px 5px 0px 5px;
+    padding: 5px 5px 0px 5px;
+    height: 100%;
+}
+
+.list-render-container {
+    height: 100px;
 }
 
 .player-config-row {
@@ -62,7 +67,7 @@
 }
 
 #subtitle {
-    transition: opacity 0.1s;
+    transition: opacity 0.2s;
 }
 
 @media only screen and (max-width: 1000px) {

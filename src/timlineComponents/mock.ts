@@ -17,6 +17,7 @@ export interface CustomTimelineAction extends TimelineAction {
     linePosition: string;
     size: number;
     textPosition: string;
+    toEdit: boolean;
   };
 }
 
@@ -65,6 +66,7 @@ export const mockData: CusTomTimelineRow[] = [
           linePosition: "",
           size: 100,
           textPosition: "",
+          toEdit: false,
         },
       },
       {
@@ -82,6 +84,7 @@ export const mockData: CusTomTimelineRow[] = [
           linePosition: "",
           size: 100,
           textPosition: "",
+          toEdit: false,
         },
       },
     ],

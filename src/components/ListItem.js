@@ -35,11 +35,12 @@ const ListItem = ({
     
 
     const onClickChange = () => {
-        if(checked) {
-            setChecked(false);
+        if(subtitleObject.data.toEdit) {
+            subtitleObject.data.toEdit = false;
         } else {
-            setChecked(true);
+            subtitleObject.data.toEdit = true;
         }
+        setChecked(subtitleObject.data.toEdit);
     }
     
     const onHandleInputChange = (event) => {
@@ -83,7 +84,7 @@ const ListItem = ({
     }
 
     useEffect(() => {
-        if(checked) {
+        if(subtitleObject.data.toEdit) {
             addToEditList(subtitleObject);
         } else {
             removeFromEditList(subtitleObject.data.subtitleNumber);
@@ -95,7 +96,7 @@ const ListItem = ({
             <div className="toolbar">
                 <div className="checkbox-container">
                     <p className="checkbox-text">Edit Select</p>
-                    <Checkbox size={"small"} className="checkbox" onChange={onClickChange} checked={checked}/>
+                    <Checkbox size={"small"} className="checkbox" onChange={onClickChange} checked={subtitleObject.data.toEdit}/>
                 </div>
                 <div onClick={() => deleteSubtitle(subtitleObject)}>
                     <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />

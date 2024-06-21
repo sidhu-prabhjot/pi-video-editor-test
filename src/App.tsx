@@ -5,7 +5,7 @@ import { CustomRender0, CustomRender1} from './timlineComponents/custom';
 import './timelineStyles/index.less';
 import TimelinePlayer from './timlineComponents/player';
 import lottieControl from './timlineComponents/lottieControl';
-import {parseVTTFile, generateVtt} from './processComponents/Parser';
+import {parseVTTFile, generateVtt, generateSrt} from './processComponents/Parser';
 import VideoJS from './VideoJS';
 import videojs from 'video.js';
 import Subtitle from './components/Subtitle';
@@ -13,11 +13,14 @@ import DragDrop from './components/DragDrop';
 import SideListSearch from './components/SideListSearch';
 import ListItem from './components/ListItem';
 import TextSubmit from './components/TextSubmit';
+import TextInput from './components/TextInput';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Switch from '@mui/material/Switch';
+import CircularProgress from '@mui/material/CircularProgress';
 import EditAllModal from './components/EditAllModal';
 import AddSubtitleModal from './components/AddSubtitleModal';
-import {List} from 'react-virtualized';
+import {List, AutoSizer} from 'react-virtualized';
 import './styles/List.css';
 import './styles/Main.css';
 
@@ -40,6 +43,7 @@ interface CustomTimelineAction extends TimelineAction {
     linePosition: string;
     size: number;
     textPosition: string;
+    toEdit: boolean;
   };
 }
 
@@ -64,6 +68,8 @@ const App = () => {
   const [currentSubtitle, setCurrentSubtitle] = useState("");
   const [data, setData] = useState(mockData);
   const [overlaps, setOverlaps] = useState([]);
+  
+  const [filename, setFilename] = useState("export file");
 
   //track IDs
   const [idMap, setIdMap] = useState({});
@@ -98,6 +104,17 @@ const App = () => {
   //button and switch toggling states
   const [switchState, setSwitchState] = useState(true);
 
+  //window dimensions
+  const [width, setWidth] = useState(window.innerWidth);
+  const [height, setHeight] = useState(window.innerHeight);
+
+  //responsive design states
+  const [searchBarWidth, setSearchBarWidth] = useState(200);
+  const [listRowHeight, setListRowHeight] = useState(220);
+
+  //loading states
+  const [scrollListLoading, setScrollListLoading] = useState(false);
+
   ///////////////////////////////////////////////////////////////////////////////////////// component setup
 
   //TIMELINE
@@ -108,14 +125,15 @@ const App = () => {
       name: 'effect1',
       source: {
         enter: ({ action, time }) => {
+          setCurrentSubtitle((action as CustomTimelineAction).data.name);
           const src = (action as CustomTimelineAction).data.src;
           setAlignment((action as CustomTimelineAction).data.alignment);
 
           let linePosition = (action as CustomTimelineAction).data.linePosition;
           if(linePosition === "auto") {
-            setLine(300);
+            setLine(400);
           } else {
-            setLine(Number(linePosition) * 3)
+            setLine(Number(linePosition) * 4)
           }
 
           listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
@@ -132,7 +150,6 @@ const App = () => {
 
           //update timeline and current subtitle
           lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
-          setCurrentSubtitle((action as CustomTimelineAction).data.name);
 
           //make subtitle visible
           if(subtitleElement) {
@@ -155,6 +172,41 @@ const App = () => {
             subtitleElement.style.opacity = "0";
           }
         },
+        // //THIS IS CAUSING UNSCROLLABILITY WHEN ON FIRST LIST ITEM
+        // update: ({action, time}) => {
+        //   if(time == 0) {
+        //     setCurrentSubtitle((action as CustomTimelineAction).data.name);
+        //     const src = (action as CustomTimelineAction).data.src;
+        //     setAlignment((action as CustomTimelineAction).data.alignment);
+
+        //     let linePosition = (action as CustomTimelineAction).data.linePosition;
+        //     if(linePosition === "auto") {
+        //       setLine(300);
+        //     } else {
+        //       setLine(Number(linePosition) * 3)
+        //     }
+
+        //     listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
+
+        //     let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+        //     let subtitleElement = document.getElementById("subtitle");
+
+        //     //color update
+        //     if (listElement) {
+        //       listElement.style.backgroundColor = "rgb(140, 186, 179)";
+        //     } else {
+        //       console.error(`Element with id ${action.id} not found`);
+        //     }
+
+        //     //update timeline and current subtitle
+        //     lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
+
+        //     //make subtitle visible
+        //     if(subtitleElement) {
+        //       subtitleElement.style.opacity = "100";
+        //     }
+        //   }  
+        // }
       },
     },
   };    
@@ -231,6 +283,7 @@ const App = () => {
           linePosition: "auto",
           size: 100,
           textPosition: "",
+          toEdit: false,
         } 
       }
       let tempArray = cloneDeep(data);
@@ -299,9 +352,7 @@ const App = () => {
 
     }
 
-    const update = async () => {
-      await listRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
-    } 
+    update(subtitleObject);
 
     //merge the leftover element
     if(i < length) {
@@ -314,7 +365,7 @@ const App = () => {
     tempData[0].actions = [...mergedActions];
     setData([...tempData]);
 
-    update();
+    update(subtitleObject);
 
   }
 
@@ -420,16 +471,6 @@ const App = () => {
     console.log("alignment change: ", alignment);
   }
 
-  const handleAllAlignmentChange = (alignment, id) => {
-    document.getElementById(`edit-all-left-align`).style.backgroundColor = "#ffffff";
-    document.getElementById(`edit-all-middle-align`).style.backgroundColor = "#ffffff";
-    document.getElementById(`edit-all-right-align`).style.backgroundColor = "#ffffff";
-    document.getElementById(id).style.backgroundColor = "#7F7979";
-    setAlignmentEdit(alignment);
-
-    console.log("alignment change: ", alignment);
-  }
-
   const editAllSelected = () => {
     let tempData = cloneDeep(data);
     let tempActions = tempData[0].actions;
@@ -516,12 +557,29 @@ const App = () => {
     }
   }
 
+  const generateSRT = () => {
+    if(verifySubtitlesForExport()) {
+      let generatedString = generateSrt(data);
+      downloadSRTFile(generatedString);
+    }
+  }
+
   //download the vtt file
   const downloadVTTFile = (generatedString) => {
     const element = document.createElement("a");
     const file = new Blob([generatedString], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = "exported_subtitles.vtt";
+    element.download = `${filename}.vtt`;
+    document.body.appendChild(element); // Required for this to work in FireFox
+    element.click();
+  }
+
+  //download the vtt file
+  const downloadSRTFile = (generatedString) => {
+    const element = document.createElement("a");
+    const file = new Blob([generatedString], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `${filename}.srt`;
     document.body.appendChild(element); // Required for this to work in FireFox
     element.click();
   }
@@ -531,24 +589,9 @@ const App = () => {
   //move to the clicked subtitle on both the side list
   const handleListClick = (subtitleObject) => {
 
-    //find what index it is
-    let index=0;
-    let actions = data[0].actions;
-    for(let i = 0; i < actions.length; i++) {
-      if(actions[i] == subtitleObject) {
-        break;
-      }
-      index++;
-    }
+    update(subtitleObject);
+    setTime(subtitleObject);
 
-    if(listRef.current) {
-      listRef.current.scrollToRow(index);
-    } else {
-      console.log("list reference is defective");
-    }
-
-    timelineState.current.setTime(subtitleObject.start);
-    playerRef.current.currentTime(timelineState.current.getTime());
   }
 
   //handles the scenario when a subtitle in the timeline is clicked
@@ -624,6 +667,10 @@ const App = () => {
     playerRef.current.currentTime(timelineState.current.getTime());
   }
 
+  const handleFilenameInputChange = (event) => {
+    setFilename(event.target.value);
+  }
+
 
   //////////////////////////////////////////////////////// component prop functions
 
@@ -681,6 +728,13 @@ const App = () => {
     await listRef.current.scrollToRow(action.data.subtitleNumber);
   }
 
+  const setTime = (action) => {
+    if(timelineState.current && playerRef.current) {
+      timelineState.current.setTime(action.start);
+      playerRef.current.currentTime(action.start);
+    }
+  }
+
   //////////////////////////////////////////////////////////////////////////// React hooks utilization
 
   useEffect(() => {
@@ -721,6 +775,25 @@ const App = () => {
 
   }, [switchState])
 
+  useEffect(() => {
+    const handleResize = () => {
+      setWidth(window.innerWidth);
+      setHeight(window.innerHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if(width > 1600) {
+      setSearchBarWidth(400);
+    }
+  }, [width]);
+
   ///////////////////////////////////////////////////////////////// rendering functions
 
   function rowRenderer({
@@ -759,38 +832,54 @@ const App = () => {
         <div className="scroll-container">
         <div>
           <div className={"search-bar-container"}>
-            <SideListSearch onHandleResultClick={handleResultClick} dataObjects={actionData} />
+            <SideListSearch searchBarWidth={searchBarWidth} onHandleResultClick={handleResultClick} dataObjects={actionData} />
             <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div className={"drag-drop-container"}>
               <DragDrop onVideoUpload={handleOnVideoUpload} />
             </div>
           </div>
-          <ul>
-            {searchResults.slice(0, 5).map(result => (
-              <li key={result.id} style={{backgroundColor: "#B2BEB5"}} onClick={() => handleResultClick(result.startTime)}>
-                <p>{result.content} | start: {result.startTime} | end: {result.endTime}</p>
-              </li>
-            ))}
-          </ul>
         </div>
-          <div className="subtitle-list-container">
-              <List
-              className={"list-render-container"}
-              ref={listRef}
-              width={550}
-              height={280}
-              rowCount={data[0].actions.length}
-              rowHeight={220}
-              rowRenderer={rowRenderer}
-              overscanRowCount={5}
-              {...data}
-            />
+          <div id={"subtitle-list-container-id"} className="subtitle-list-container">
+            <AutoSizer defaultHeight={100} defaultWidth={100}>
+              {(size) => {
+                const {width, height} = size; 
+                return (
+                <List
+                  scrollToAlignment='start'
+                  className={"list-render-container"}
+                  ref={listRef}
+                  width={width}
+                  height={height}
+                  rowCount={data[0].actions.length}
+                  rowHeight={listRowHeight}
+                  rowRenderer={rowRenderer}
+                  noRowsRenderer={() => {
+                    if(data[0].actions.length === 0) {
+                      return (
+                        <p>upload a vtt file to get started.</p>
+                      )
+                    } else {
+                      return (
+                        <Box sx={{ display: 'flex' }}>
+                          <CircularProgress />
+                        </Box>
+                      )
+                    }
+                  }}
+                  overscanRowCount={20}
+                  {...data}
+                />
+              )
+              }}
+            </AutoSizer>
           </div>
         </div>
         <div className={"video-container"}>
           <div className={"toolbar-container"}>
             <TextSubmit handleInputChange={handleLinkInputChange} handleSubmit={handleLinkSubmit} submitButtonText={"Insert"} label={"Video Link"}/>
+            <TextInput handleInputChange={handleFilenameInputChange} label={"File Name"}/>
             <Button className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
+            <Button className={"button export-button"} variant={"contained"} onClick={() => generateSRT()}>Export SRT</Button>
           </div>        
           <div className={"video-player-container"}>
             <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
@@ -818,8 +907,6 @@ const App = () => {
           editorData={data}
           effects={mockEffect}
           onChange={(data) => {
-            //need to change some state in list to make it update
-            console.log("data changed: ", data);
             setData([...data as CusTomTimelineRow[]]);
             verifySubtitles();
           }}

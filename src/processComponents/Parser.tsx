@@ -1,6 +1,7 @@
 import {WebVTTParser} from 'webvtt-parser';
 import {TimelineAction, TimelineRow} from '@xzdarcy/react-timeline-editor';
 import Vtt from 'vtt-creator';
+import { generateSRT } from 'subtitle-generator';
 
 let idRef = 0;
 
@@ -16,6 +17,7 @@ interface CustomTimelineAction extends TimelineAction {
         linePosition: string;
         size: number;
         textPosition: string;
+        toEdit: boolean;
     };
 }
 
@@ -61,6 +63,7 @@ export const parseVTTFile = (fileData, idMap) => {
                 linePosition: data.linePosition,
                 size: data.size,
                 textPosition: data.textPosition,
+                toEdit: false,
             },
         }
         subtitleNumber++;
@@ -74,7 +77,6 @@ export const parseVTTFile = (fileData, idMap) => {
 }
 
 export const generateVtt = (mockData:CusTomTimelineRow[]) => {
-
     const vtt = new Vtt();
     const actions = mockData[0].actions;
 
@@ -87,4 +89,42 @@ export const generateVtt = (mockData:CusTomTimelineRow[]) => {
 
     return vtt.toString();
 
+}
+
+function formatTime(seconds) {
+    // Get the hours, minutes, and seconds
+    let hrs = Math.floor(seconds / 3600);
+    let mins = Math.floor((seconds % 3600) / 60);
+    let secs = Math.floor(seconds % 60);
+    let ms = Math.round((seconds % 1) * 1000); // Convert the fractional part to milliseconds
+
+    // Pad the values with leading zeros if necessary
+    let hrsStr = String(hrs).padStart(2, '0');
+    let minsStr = String(mins).padStart(2, '0');
+    let secsStr = String(secs).padStart(2, '0');
+    let msStr = String(ms).padStart(3, '0');
+
+    // Return the formatted string
+    return `${hrsStr}:${minsStr}:${secsStr},${msStr}`;
+}
+
+
+export const generateSrt = (mockData:CusTomTimelineRow[]) => {
+    let formattedSubtitles = [];
+
+    mockData[0].actions.forEach((action) => {
+
+        let formattedAction = {
+            start: formatTime(action.start),
+            end: formatTime(action.end),
+            content: action.data.name,
+        }
+
+        formattedSubtitles.push(formattedAction);
+
+    });
+
+    const subtitleText = generateSRT(formattedSubtitles, 'timestamp');
+
+    return subtitleText;
 }

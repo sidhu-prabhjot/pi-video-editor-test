@@ -4,7 +4,7 @@ import Stack from '@mui/material/Stack';
 import Autocomplete from '@mui/material/Autocomplete';
 import '../styles/SearchBar.css';
 
-const SideListSearch = ({ dataObjects, onHandleResultClick }) => {
+const SideListSearch = ({ searchBarWidth, dataObjects, onHandleResultClick }) => {
 
     const handleResultClick = (event, value) => {
         if (value) {
@@ -14,7 +14,7 @@ const SideListSearch = ({ dataObjects, onHandleResultClick }) => {
 
     return (
         <div className="search-bar-container">
-            <Stack spacing={2} sx={{ width: 250 }}>
+            <Stack spacing={2} sx={{ width: searchBarWidth }}>
                 <Autocomplete
                     className="search-bar"
                     id="free-solo-demo"

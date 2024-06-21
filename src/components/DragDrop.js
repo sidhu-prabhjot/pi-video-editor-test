@@ -9,7 +9,7 @@ function DragDrop({onVideoUpload}) {
   return (
       <FileUploader className={"file-drop"} handleChange={(file) => {
           onVideoUpload(file);
-      }} name="file" types={fileTypes} style={{minWidth:"none"}}/>
+      }} name="file" types={fileTypes}/>
   );
 }
 
