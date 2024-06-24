@@ -67,7 +67,7 @@
 }
 
 #subtitle {
-    transition: opacity 0.2s;
+    transition: opacity 0.1s;
 }
 
 @media only screen and (max-width: 1000px) {

@@ -1,6 +1,6 @@
 import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
 import { cloneDeep } from 'lodash';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { CustomRender0, CustomRender1} from './timlineComponents/custom';
 import './timelineStyles/index.less';
 import TimelinePlayer from './timlineComponents/player';
@@ -64,8 +64,12 @@ const App = () => {
   const playerRef = useRef(null);
   const listRef = useRef(null);
 
+  
+
   //STATE MANAGEMENT:
-  const [currentSubtitle, setCurrentSubtitle] = useState("");
+  const [currentSubtitle, setCurrentSubtitle] = useState({data: {
+    name: "placeholder",
+  }} as CustomTimelineAction);
   const [data, setData] = useState(mockData);
   const [overlaps, setOverlaps] = useState([]);
   
@@ -80,10 +84,6 @@ const App = () => {
   //search bar related states
   const [actionData, setActionData] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
-
-  //subtitle positioning:
-  const [alignment, setAlignment] = useState("center");
-  const [line, setLine] = useState(0)
 
   //timeline customization
   const [zoom, setZoom] = useState(5);
@@ -106,7 +106,6 @@ const App = () => {
 
   //window dimensions
   const [width, setWidth] = useState(window.innerWidth);
-  const [height, setHeight] = useState(window.innerHeight);
 
   //responsive design states
   const [searchBarWidth, setSearchBarWidth] = useState(200);
@@ -125,36 +124,22 @@ const App = () => {
       name: 'effect1',
       source: {
         enter: ({ action, time }) => {
-          setCurrentSubtitle((action as CustomTimelineAction).data.name);
-          const src = (action as CustomTimelineAction).data.src;
-          setAlignment((action as CustomTimelineAction).data.alignment);
 
-          let linePosition = (action as CustomTimelineAction).data.linePosition;
-          if(linePosition === "auto") {
-            setLine(400);
-          } else {
-            setLine(Number(linePosition) * 4)
-          }
-
-          listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
+          // const src = (action as CustomTimelineAction).data.src;
 
           let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
           let subtitleElement = document.getElementById("subtitle");
 
           //color update
           if (listElement) {
-            listElement.style.backgroundColor = "rgb(140, 186, 179)";
-          } else {
-            console.error(`Element with id ${action.id} not found`);
+            listElement.style.backgroundColor = "#FCA311";
           }
 
           //update timeline and current subtitle
-          lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
+          // lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
+          listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
 
-          //make subtitle visible
-          if(subtitleElement) {
-            subtitleElement.style.opacity = "100";
-          }
+          setCurrentSubtitle((action as CustomTimelineAction));
         },
         leave: ({ action }) => {
           let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
@@ -162,51 +147,9 @@ const App = () => {
           
           //change color
           if (listElement) {
-            listElement.style.backgroundColor = "beige";
-          } else {
-            console.error(`Element with id ${action.id} not found`);
-          }
-
-          //make subtitle invisible
-          if(subtitleElement) {
-            subtitleElement.style.opacity = "0";
+            listElement.style.backgroundColor = "#E5E5E5";
           }
         },
-        // //THIS IS CAUSING UNSCROLLABILITY WHEN ON FIRST LIST ITEM
-        // update: ({action, time}) => {
-        //   if(time == 0) {
-        //     setCurrentSubtitle((action as CustomTimelineAction).data.name);
-        //     const src = (action as CustomTimelineAction).data.src;
-        //     setAlignment((action as CustomTimelineAction).data.alignment);
-
-        //     let linePosition = (action as CustomTimelineAction).data.linePosition;
-        //     if(linePosition === "auto") {
-        //       setLine(300);
-        //     } else {
-        //       setLine(Number(linePosition) * 3)
-        //     }
-
-        //     listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
-
-        //     let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-        //     let subtitleElement = document.getElementById("subtitle");
-
-        //     //color update
-        //     if (listElement) {
-        //       listElement.style.backgroundColor = "rgb(140, 186, 179)";
-        //     } else {
-        //       console.error(`Element with id ${action.id} not found`);
-        //     }
-
-        //     //update timeline and current subtitle
-        //     lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
-
-        //     //make subtitle visible
-        //     if(subtitleElement) {
-        //       subtitleElement.style.opacity = "100";
-        //     }
-        //   }  
-        // }
       },
     },
   };    
@@ -301,18 +244,40 @@ const App = () => {
 
   }
 
+  const updateData = async (tempArray) => {
+    setData([...tempArray]);
+    verifySubtitles();
+  }
+
   //deleting from the entire dataset
   const deleteSubtitle = async (action) => {
+
+    let fallbackAction;
+
+    //verify if there are other subtitles before deciding where to updating
+    if(action.data.subtitleNumber - 1 >= 0) { //if there are subtitles before, update to the previous one
+      fallbackAction = data[0].actions[action.data.subtitleNumber - 1]
+    } else if(action.data.subtitleNumber + 1 < data[0].actions.length) {
+      fallbackAction = data[0].actions[action.data.subtitleNumber + 1];
+    }
+
+    //if the current subtitle is the one being deleted, then hide it from the screen
+    if(currentSubtitle.data.subtitleNumber === action.data.subtitleNumber) {
+      let currentSubtitleElement = document.getElementById("subtitle");
+      if(currentSubtitleElement) {
+        currentSubtitleElement.style.opacity = "0";
+      }
+    }
 
     if(data[0].actions.length > 1) {
       const tempArray = data;
 
       tempArray[0].actions.splice(action.data.subtitleNumber, 1);
 
-      update(action);
-  
-      setData([...tempArray]);
-      verifySubtitles();
+      console.log("fallback action: ", fallbackAction);
+      
+      await update(fallbackAction);
+      await updateData(tempArray);
     }
 
   }
@@ -413,7 +378,7 @@ const App = () => {
         i = -1; // Restart loop to re-check all actions
       } else {
         if(nextElement) {
-          nextElement.style.backgroundColor = "beige";
+          nextElement.style.backgroundColor = "#E5E5E5";
         }
       }
     }
@@ -532,7 +497,7 @@ const App = () => {
         tempOverlapsArray.push([next.start, current.end]);
       } else {
         if(nextElement) {
-          nextElement.style.backgroundColor = "beige";
+          nextElement.style.backgroundColor = "#E5E5E5";
         }
       }
     }
@@ -587,36 +552,45 @@ const App = () => {
   ////////////////////////////////////////////////////////////////////handle screen clicks and actions
 
   //move to the clicked subtitle on both the side list
-  const handleListClick = (subtitleObject) => {
+  const handleListClick = async (subtitleObject) => {
 
-    update(subtitleObject);
+    console.log("clicked subtitle: ", subtitleObject.data.subtitleNumber);
+
+    const currentListElement = document.getElementById(`${currentSubtitle.data.subtitleNumber}-list-item-container`);
+    if (currentListElement) {
+      currentListElement.style.backgroundColor = "#E5E5E5";
+    }
+
     setTime(subtitleObject);
+    update(subtitleObject);
 
+    const listElement = document.getElementById(`${subtitleObject.data.subtitleNumber}-list-item-container`);
+    if (listElement) {
+      listRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
+      listElement.style.backgroundColor = "#FCA311";
+    }
   }
 
   //handles the scenario when a subtitle in the timeline is clicked
-  const handleActionClick = (action: CustomTimelineAction) => {
-
-    listRef.current.scrollToRow(action.data.subtitleNumber);
-
-    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
-    const allListElements = document.getElementsByClassName("list-item-container") as HTMLCollectionOf<HTMLElement>;
-    
-    if(allListElements) {
-      for (let i = 0; i < allListElements.length; i++) {
-        allListElements[i].style.backgroundColor = "beige!important";
-      }
-    }
-    
-    if (listElement) {
-      listRef.current.scrollToRow(action.data.subtitleNumber);
-      listElement.style.backgroundColor = "rgb(140, 186, 179)";
-    }
+  const handleActionClick = async (action: CustomTimelineAction) => {
 
     timelineState.current.setTime(action.start);
     if(playerRef.current) {
       playerRef.current.currentTime(timelineState.current.getTime());
     }
+
+    const currentListElement = document.getElementById(`${currentSubtitle.data.subtitleNumber}-list-item-container`);
+    if (currentListElement) {
+      currentListElement.style.backgroundColor = "#E5E5E5";
+    }
+
+    await update(action, 5);
+
+    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
+    if(listElement) {
+      listElement.style.backgroundColor = "#FCA311";
+    }
+
 
   }
 
@@ -723,48 +697,58 @@ const App = () => {
 
   ////////////////////////////////////////////////////////////////////////////////// other helper functions
 
-  const update = async (action) => {
-    await listRef.current.scrollToRow(data[0].actions.length - 1);
-    await listRef.current.scrollToRow(action.data.subtitleNumber);
-  }
+  const update = async (action, shift=2) => {
+    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
 
-  const setTime = (action) => {
-    if(timelineState.current && playerRef.current) {
-      timelineState.current.setTime(action.start);
-      playerRef.current.currentTime(action.start);
+    if(action.data.subtitleNumber + shift < data[0].actions.length) {
+      await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
+    } else {
+      await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
+    }
+
+    if(action && action.data) {
+      await listRef.current.scrollToRow(action.data.subtitleNumber);
+    }
+
+    if(listElement && listElement.style) {
+      listElement.style.backgroundColor = "#FCA311";
     }
   }
+
+  //resyncs the player and timeline at a specifc subtitle
+  const setTime = async (action) => {
+    if(timelineState.current && playerRef.current) {
+      playerRef.current.currentTime(action.start);
+      timelineState.current.setTime(playerRef.current.currentTime());
+    }
+  }
+
+  const resyncTime = () => {
+    if(timelineState.current && playerRef.current) {
+      timelineState.current.setTime(playerRef.current.currentTime());
+    }
+  }
+
+  const getLinePositionValue = (action) => {
+    if(action.data.linePosition === "auto") {
+      return 400;
+    } else {
+      return Number(action.data.linePosition) * 4;
+    }
+  }
+
 
   //////////////////////////////////////////////////////////////////////////// React hooks utilization
 
   useEffect(() => {
     console.log("current dataset: ", data);
-    let tempActionData = [];
-    data[0].actions.forEach(action => {
-      let searchObject = {
-        startTime: action.start,
-        endTime: action.end,
-        actionId: action.id,
-        content: action.data.name,
-        subtitleNumber: action.data.subtitleNumber,
-      }
-      tempActionData.push(searchObject);
-    })
-    setActionData([...tempActionData]);
+    setActionData([...data[0].actions]);
     if(timelineState.current && playerRef.current) {
 
       playerRef.current.currentTime(timelineState.current.getTime());
 
     }
   }, [data])
-
-  useEffect(() => {
-    if(timelineState.current && playerRef.current) {
-
-      timelineState.current.setTime(playerRef.current.currentTime());
-
-    } 
-  })
 
   useEffect(() => {
     if(switchState) {
@@ -776,23 +760,8 @@ const App = () => {
   }, [switchState])
 
   useEffect(() => {
-    const handleResize = () => {
-      setWidth(window.innerWidth);
-      setHeight(window.innerHeight);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    resyncTime();
   }, []);
-
-  useEffect(() => {
-    if(width > 1600) {
-      setSearchBarWidth(400);
-    }
-  }, [width]);
 
   ///////////////////////////////////////////////////////////////// rendering functions
 
@@ -845,7 +814,7 @@ const App = () => {
                 const {width, height} = size; 
                 return (
                 <List
-                  scrollToAlignment='start'
+                  scrollToAlignment='end'
                   className={"list-render-container"}
                   ref={listRef}
                   width={width}
@@ -866,7 +835,7 @@ const App = () => {
                       )
                     }
                   }}
-                  overscanRowCount={20}
+                  overscanRowCount={5}
                   {...data}
                 />
               )
@@ -883,7 +852,7 @@ const App = () => {
           </div>        
           <div className={"video-player-container"}>
             <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
-            <Subtitle currentSubtitle={currentSubtitle} alignment={alignment} linePosition={line} />
+            <Subtitle currentSubtitle={currentSubtitle} alignment={currentSubtitle.data.alignment} linePosition={getLinePositionValue(currentSubtitle)} />
           </div>
         </div>
       </div>

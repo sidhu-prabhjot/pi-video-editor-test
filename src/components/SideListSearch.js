@@ -8,7 +8,7 @@ const SideListSearch = ({ searchBarWidth, dataObjects, onHandleResultClick }) =>
 
     const handleResultClick = (event, value) => {
         if (value) {
-            onHandleResultClick(value.startTime);
+            onHandleResultClick(value.start);
         }
     }
 
@@ -20,10 +20,10 @@ const SideListSearch = ({ searchBarWidth, dataObjects, onHandleResultClick }) =>
                     id="free-solo-demo"
                     freeSolo
                     options={dataObjects}
-                    getOptionLabel={(option) => option.content}
+                    getOptionLabel={(option) => option.data.name}
                     renderOption={(props, option) => (
-                        <li {...props} key={option.startTime}>
-                            {option.content}
+                        <li {...props} key={option.start}>
+                            {option.data.name}
                         </li>
                     )}
                     onChange={handleResultClick}
