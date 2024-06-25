@@ -18,6 +18,7 @@ export interface CustomTimelineAction extends TimelineAction {
     size: number;
     textPosition: string;
     toEdit: boolean;
+    backgroundColor: string;
   };
 }
 
@@ -30,19 +31,6 @@ export const mockEffect: Record<string, TimelineEffect> = {
     id: 'effect1',
     name: 'effect1',
     source: {
-      enter: ({ action, time }) => {
-        const src = (action as CustomTimelineAction).data.src;
-        lottieControl.enter({ id: src, src, startTime: action.start, endTime: action.end, time });
-        console.log("data: ", (action as CustomTimelineAction));
-      },
-      update: ({ action, time }) => {
-        const src = (action as CustomTimelineAction).data.src;
-        lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
-      },
-      leave: ({ action, time }) => {
-        const src = (action as CustomTimelineAction).data.src;
-        lottieControl.leave({ id: src, startTime: action.start, endTime: action.end, time });
-      },
     },
   },
 };
@@ -67,6 +55,7 @@ export const mockData: CusTomTimelineRow[] = [
           size: 100,
           textPosition: "",
           toEdit: false,
+          backgroundColor: "#E5E5E5",
         },
       },
       {
@@ -85,6 +74,7 @@ export const mockData: CusTomTimelineRow[] = [
           size: 100,
           textPosition: "",
           toEdit: false,
+          backgroundColor: "#E5E5E5",
         },
       },
     ],

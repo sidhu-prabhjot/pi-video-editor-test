@@ -18,8 +18,6 @@ const ListItem = ({
     onHandleChange,
     onHandleEndTimeChange, 
     onHandleLinePositionChange,
-    addToEditList,
-    removeFromEditList,
     deleteSubtitle,
     handleListClick,
     openModal,
@@ -83,16 +81,8 @@ const ListItem = ({
         onSetParentData();
     }
 
-    useEffect(() => {
-        if(subtitleObject.data.toEdit) {
-            addToEditList(subtitleObject);
-        } else {
-            removeFromEditList(subtitleObject.data.subtitleNumber);
-        }
-    }, [checked]);
-
     return (
-        <li id={`${subtitleObject.data.subtitleNumber}-list-item-container`} onClick={() => handleListClick(subtitleObject)} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
+        <li id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{backgroundColor: subtitleObject.data.backgroundColor}} onClick={() => handleListClick(subtitleObject)} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
             <div className="toolbar">
                 <div className="checkbox-container">
                     <p className="checkbox-text">Edit Select</p>

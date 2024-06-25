@@ -4,7 +4,6 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import { CustomRender0, CustomRender1} from './timlineComponents/custom';
 import './timelineStyles/index.less';
 import TimelinePlayer from './timlineComponents/player';
-import lottieControl from './timlineComponents/lottieControl';
 import {parseVTTFile, generateVtt, generateSrt} from './processComponents/Parser';
 import VideoJS from './VideoJS';
 import videojs from 'video.js';
@@ -44,6 +43,7 @@ interface CustomTimelineAction extends TimelineAction {
     size: number;
     textPosition: string;
     toEdit: boolean;
+    backgroundColor: string;
   };
 }
 
@@ -83,7 +83,6 @@ const App = () => {
 
   //search bar related states
   const [actionData, setActionData] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
 
   //timeline customization
   const [zoom, setZoom] = useState(5);
@@ -104,15 +103,9 @@ const App = () => {
   //button and switch toggling states
   const [switchState, setSwitchState] = useState(true);
 
-  //window dimensions
-  const [width, setWidth] = useState(window.innerWidth);
-
   //responsive design states
   const [searchBarWidth, setSearchBarWidth] = useState(200);
   const [listRowHeight, setListRowHeight] = useState(220);
-
-  //loading states
-  const [scrollListLoading, setScrollListLoading] = useState(false);
 
   ///////////////////////////////////////////////////////////////////////////////////////// component setup
 
@@ -125,30 +118,16 @@ const App = () => {
       source: {
         enter: ({ action, time }) => {
 
-          // const src = (action as CustomTimelineAction).data.src;
-
-          let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-          let subtitleElement = document.getElementById("subtitle");
-
-          //color update
-          if (listElement) {
-            listElement.style.backgroundColor = "#FCA311";
-          }
-
-          //update timeline and current subtitle
-          // lottieControl.update({ id: src, src, startTime: action.start, endTime: action.end, time });
+          // update((action as CustomTimelineAction));
           listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
 
+          (action as CustomTimelineAction).data.backgroundColor = "#FCA311";
+
           setCurrentSubtitle((action as CustomTimelineAction));
+
         },
         leave: ({ action }) => {
-          let listElement = document.getElementById(`${(action as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-          let subtitleElement = document.getElementById("subtitle");
-          
-          //change color
-          if (listElement) {
-            listElement.style.backgroundColor = "#E5E5E5";
-          }
+          (action as CustomTimelineAction).data.backgroundColor = "#E5E5E5";
         },
       },
     },
@@ -227,6 +206,7 @@ const App = () => {
           size: 100,
           textPosition: "",
           toEdit: false,
+          backgroundColor: "#E5E5E5",
         } 
       }
       let tempArray = cloneDeep(data);
@@ -366,7 +346,7 @@ const App = () => {
         validExport = false;
         console.log("overlap at: ", current.end, " and ", next.start);
 
-        if(currentElement) {
+        if(currentElement && nextElement) {
           currentElement.style.backgroundColor = "#BF0000";
           nextElement.style.backgroundColor = "#FF4040";
         }
@@ -403,13 +383,6 @@ const App = () => {
 
   //////////////////////////////////////////////////////////////////////// editing a specific subtitle
 
-  const addToEditList = (subtitleObject) => {
-    let tempEditList = editList;
-    tempEditList[subtitleObject.data.subtitleNumber] = subtitleObject.data;
-    console.log("edit list: ", tempEditList);
-    setEditList({...tempEditList});
-  }
-
   const handleAlignmentChange = (subtitleObject, alignment) => {
     subtitleObject.data.alignment = alignment;
     setData([...data]);
@@ -436,36 +409,28 @@ const App = () => {
     console.log("alignment change: ", alignment);
   }
 
-  const editAllSelected = () => {
+  const editAllSelected = async (removeAll=false) => {
     let tempData = cloneDeep(data);
     let tempActions = tempData[0].actions;
     tempActions.forEach(action => {
 
-      if(editList[action.data.subtitleNumber]) {
-        console.log("found: ", editList[action.data.subtitleNumber]);
+      if(action.data.toEdit) {
         if(alignmentEdit != null) {
-          console.log("editing: alignment");
           action.data.alignment = alignmentEdit;
         }
   
         if(lineEdit != -1) {
-          console.log("editing: line position");
           action.data.linePosition = lineEdit.toString();
+        }
+
+        if(removeAll) {
+          action.data.toEdit = false;
         }
       }
 
     })
 
     setData([...tempData]);
-
-  }
-
-  const removeFromEditList = (id) => {
-
-    let tempEditList = editList;
-    delete tempEditList[`${id}`];
-    setEditList({...tempEditList});
-
   }
 
   ////////////////////////////////////////////////////////////////////// exporting subtitles
@@ -556,41 +521,24 @@ const App = () => {
 
     console.log("clicked subtitle: ", subtitleObject.data.subtitleNumber);
 
-    const currentListElement = document.getElementById(`${currentSubtitle.data.subtitleNumber}-list-item-container`);
-    if (currentListElement) {
-      currentListElement.style.backgroundColor = "#E5E5E5";
-    }
+    currentSubtitle.data.backgroundColor = "#E5E5E5";
 
     setTime(subtitleObject);
     update(subtitleObject);
 
-    const listElement = document.getElementById(`${subtitleObject.data.subtitleNumber}-list-item-container`);
-    if (listElement) {
-      listRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
-      listElement.style.backgroundColor = "#FCA311";
-    }
+    subtitleObject.data.backgroundColor = "#FCA311";
+
   }
 
   //handles the scenario when a subtitle in the timeline is clicked
   const handleActionClick = async (action: CustomTimelineAction) => {
 
-    timelineState.current.setTime(action.start);
-    if(playerRef.current) {
-      playerRef.current.currentTime(timelineState.current.getTime());
-    }
+    currentSubtitle.data.backgroundColor = "#E5E5E5";
 
-    const currentListElement = document.getElementById(`${currentSubtitle.data.subtitleNumber}-list-item-container`);
-    if (currentListElement) {
-      currentListElement.style.backgroundColor = "#E5E5E5";
-    }
+    setTime(action);
+    update(action);
 
-    await update(action, 5);
-
-    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
-    if(listElement) {
-      listElement.style.backgroundColor = "#FCA311";
-    }
-
+    action.data.backgroundColor = "#FCA311";
 
   }
 
@@ -698,7 +646,6 @@ const App = () => {
   ////////////////////////////////////////////////////////////////////////////////// other helper functions
 
   const update = async (action, shift=2) => {
-    const listElement = document.getElementById(`${action.data.subtitleNumber}-list-item-container`);
 
     if(action.data.subtitleNumber + shift < data[0].actions.length) {
       await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
@@ -710,9 +657,7 @@ const App = () => {
       await listRef.current.scrollToRow(action.data.subtitleNumber);
     }
 
-    if(listElement && listElement.style) {
-      listElement.style.backgroundColor = "#FCA311";
-    }
+    action.data.backgroundColor = "#FCA311";
   }
 
   //resyncs the player and timeline at a specifc subtitle
@@ -742,12 +687,9 @@ const App = () => {
 
   useEffect(() => {
     console.log("current dataset: ", data);
+    console.log("current edit list: ", editList);
     setActionData([...data[0].actions]);
-    if(timelineState.current && playerRef.current) {
-
-      playerRef.current.currentTime(timelineState.current.getTime());
-
-    }
+    resyncTime();
   }, [data])
 
   useEffect(() => {
@@ -758,10 +700,6 @@ const App = () => {
     }
 
   }, [switchState])
-
-  useEffect(() => {
-    resyncTime();
-  }, []);
 
   ///////////////////////////////////////////////////////////////// rendering functions
 
@@ -779,8 +717,6 @@ const App = () => {
           onHandleStartTimeChange={handleStartTimeChange}
           onHandleLinePositionChange={onHandleLinePositionChange}
           onSetParentData={onSetParentData}
-          addToEditList={addToEditList}
-          removeFromEditList={removeFromEditList}
           deleteSubtitle={deleteSubtitle}
           handleListClick={handleListClick}
           openModal={openModal}
@@ -814,7 +750,7 @@ const App = () => {
                 const {width, height} = size; 
                 return (
                 <List
-                  scrollToAlignment='end'
+                  scrollToAlignment='center'
                   className={"list-render-container"}
                   ref={listRef}
                   width={width}
@@ -835,7 +771,7 @@ const App = () => {
                       )
                     }
                   }}
-                  overscanRowCount={5}
+                  overscanRowCount={4}
                   {...data}
                 />
               )

@@ -18,6 +18,7 @@ interface CustomTimelineAction extends TimelineAction {
         size: number;
         textPosition: string;
         toEdit: boolean;
+        backgroundColor: string;
     };
 }
 
@@ -64,6 +65,7 @@ export const parseVTTFile = (fileData, idMap) => {
                 size: data.size,
                 textPosition: data.textPosition,
                 toEdit: false,
+                backgroundColor: "#E5E5E5",
             },
         }
         subtitleNumber++;

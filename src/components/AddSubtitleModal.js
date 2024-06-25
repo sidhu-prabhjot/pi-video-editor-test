@@ -1,5 +1,13 @@
 import Box from '@mui/material/Box';
 import Modal from '@mui/material/Modal';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
+
+import '../styles/Main.css';
+import '../styles/List.css';
+import '../styles/EditAllModal.css';
 
 const style = {
     position: 'absolute',
@@ -13,7 +21,15 @@ const style = {
     p: 4,
   };
 
-const AddSubtitleModal = ({isOpen, onCloseModal, onHandleInsert, endTime, subtitle, onHandleInputChange, inputValue}) => {
+const AddSubtitleModal = ({
+    isOpen,
+    onCloseModal,
+    onHandleInsert,
+    endTime,
+    subtitle,
+    onHandleInputChange,
+    inputValue
+}) => {
 
     return (
     <div>
@@ -24,13 +40,25 @@ const AddSubtitleModal = ({isOpen, onCloseModal, onHandleInsert, endTime, subtit
             aria-describedby="modal-modal-description"
         >
             <Box sx={style}>
-                <div>
-                    <h2 ref={(_subtitle) => (subtitle = _subtitle)}>Hello</h2>
-                    <button onClick={onCloseModal}>close</button>
-                    <form>
-                        <input type="text" value={inputValue} onChange={onHandleInputChange} />
-                        <button onClick={() => onHandleInsert(endTime, inputValue)}>add</button>
-                    </form>
+                <div className="edit-selected-container">
+                    <div className={"modal-header-container"}>
+                        <h2 ref={(_subtitle) => (subtitle = _subtitle)} className={"modal-header-heading"}>Add Subtitle: </h2>
+                        <div onClick={() => onCloseModal()}>
+                            <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
+                        </div>
+                    </div>
+                    <div className={"modal-alignment-container vertical-alignment-container"}>
+                        <TextField
+                        required
+                        id="outlined-required"
+                        label="New Subtitle Text"
+                        defaultValue={""}
+                        size={"small"}
+                        onChange={onHandleInputChange}
+                        onBlur={() => {}}
+                        />
+                    </div>
+                    <Button size={"medium"} variant={"contained"} onClick={() => {onHandleInsert(endTime, inputValue)}}>Confirm</Button>
                 </div>
             </Box>
         </Modal>

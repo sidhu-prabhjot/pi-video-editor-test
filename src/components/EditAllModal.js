@@ -1,5 +1,6 @@
 import {useState} from 'react';
 import Box from '@mui/material/Box';
+import Checkbox from '@mui/material/Checkbox';
 import Modal from '@mui/material/Modal';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -34,6 +35,7 @@ const EditAllModal = ({
     const [variantLeft, setVariantLeft] = useState("outlined");
     const [variantMiddle, setVariantMiddle] = useState("outlined");
     const [variantRight, setVariantRight] = useState("outlined");
+    const [removeAll, setRemoveAll] = useState(false);
 
     const onHandleHorizontalAlignment = (alignment, elementId) => {
         const textContent = alignment;
@@ -59,8 +61,16 @@ const EditAllModal = ({
     }
 
     const confirmEdit = () => {
-        editAllSelected();
+        editAllSelected(removeAll);
         onCloseModal();
+    }
+
+    const onCheckboxChange = () => {
+        if(removeAll) {
+            setRemoveAll(false);
+        } else {
+            setRemoveAll(true);
+        }
     }
 
     return (
@@ -97,6 +107,10 @@ const EditAllModal = ({
                             onBlur={() => {}}
                             />
                         </div>
+                    </div>
+                    <div className={"modal-remove-all-container checkbox-container"}>
+                        <p className="checkbox-text">Clear Edit List</p>
+                        <Checkbox size={"small"} className="checkbox" onChange={onCheckboxChange} checked={removeAll}/>
                     </div>
                     <Button size={"medium"} variant={"contained"} onClick={() => {confirmEdit()}}>Confirm</Button>
                 </div>

@@ -15,3 +15,7 @@
     font-size: 12px;
     font-family: 'Roboto', sans-serif; /* Add this line */
 }
+
+.action-content:hover {
+    cursor: grab;
+}
