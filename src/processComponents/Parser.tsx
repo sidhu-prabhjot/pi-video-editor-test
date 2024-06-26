@@ -68,8 +68,8 @@ export const parseVTTFile = (fileData, idMap) => {
                 backgroundColor: "#E5E5E5",
             },
         }
+        idMap[subtitleNumber] = "";
         subtitleNumber++;
-        idMap[idRef] = "";
         idRef++;
         mockData[0].actions.push(newAction);
     });

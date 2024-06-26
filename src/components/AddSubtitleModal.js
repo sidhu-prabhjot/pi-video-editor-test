@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Modal from '@mui/material/Modal';
 import TextField from '@mui/material/TextField';
@@ -19,52 +20,105 @@ const style = {
     border: '2px solid #000',
     boxShadow: 24,
     p: 4,
-  };
+};
 
 const AddSubtitleModal = ({
     isOpen,
     onCloseModal,
     onHandleInsert,
-    endTime,
-    subtitle,
+    subtitleObject,
     onHandleInputChange,
-    inputValue
+    onHandleStartInputChange,
+    onHandleEndInputChange,
+    inputValue,
+    endTime,
+    startTime,
+    data,
 }) => {
+    const [displayError, setDisplayError] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+
+    const errorMessage = () => {
+        if (displayError) {
+            return <p>{errorMsg}</p>
+        } else {
+            return null;
+        }
+    }
+
+    const handleConfirmClick = async () => {
+        try {
+            if (!startTime) {
+                startTime = subtitleObject.end;
+            }
+            if (!endTime) {
+                endTime = data[0].actions[subtitleObject.data.subtitleNumber + 1].start;
+            }
+            setErrorMsg("");
+            setDisplayError(false);
+            await onHandleInsert(startTime, endTime, inputValue, subtitleObject);
+        } catch (error) {
+            console.log(error);
+            setErrorMsg(error.message);
+            setDisplayError(true);
+        }
+    }
 
     return (
-    <div>
-        <Modal
-            open={isOpen}
-            onClose={onCloseModal}
-            aria-labelledby="modal-modal-title"
-            aria-describedby="modal-modal-description"
-        >
-            <Box sx={style}>
-                <div className="edit-selected-container">
-                    <div className={"modal-header-container"}>
-                        <h2 ref={(_subtitle) => (subtitle = _subtitle)} className={"modal-header-heading"}>Add Subtitle: </h2>
-                        <div onClick={() => onCloseModal()}>
-                            <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
+        <div>
+            <Modal
+                open={isOpen}
+                onClose={onCloseModal}
+                aria-labelledby="modal-modal-title"
+                aria-describedby="modal-modal-description"
+            >
+                <Box sx={style}>
+                    <div className="edit-selected-container">
+                        <div className={"modal-header-container"}>
+                            <h2 className={"modal-header-heading"}>Add Subtitle: </h2>
+                            <div onClick={() => onCloseModal()}>
+                                <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
+                            </div>
                         </div>
+                        <div className={"modal-alignment-container vertical-alignment-container"}>
+                            <TextField
+                                required
+                                id="outlined-required"
+                                label="New Subtitle Text"
+                                defaultValue={""}
+                                size={"small"}
+                                onChange={onHandleInputChange}
+                            />
+                        </div>
+                        <div className={"modal-alignment-container vertical-alignment-container"}>
+                            <TextField
+                                required
+                                id="outlined-required"
+                                label="Start Time"
+                                defaultValue={subtitleObject ? `${subtitleObject.end}` : ""}
+                                size={"small"}
+                                onChange={onHandleStartInputChange}
+                            />
+                        </div>
+                        <div className={"modal-alignment-container vertical-alignment-container"}>
+                            <TextField
+                                required
+                                id="outlined-required"
+                                label="End Time"
+                                defaultValue={data[0].actions[subtitleObject.data.subtitleNumber] ? `${data[0].actions[subtitleObject.data.subtitleNumber + 1].start}` : ""}
+                                size={"small"}
+                                onChange={onHandleEndInputChange}
+                            />
+                        </div>
+                        {errorMessage()}
+                        <Button size={"medium"} variant={"contained"} onClick={handleConfirmClick}>
+                            Confirm
+                        </Button>
                     </div>
-                    <div className={"modal-alignment-container vertical-alignment-container"}>
-                        <TextField
-                        required
-                        id="outlined-required"
-                        label="New Subtitle Text"
-                        defaultValue={""}
-                        size={"small"}
-                        onChange={onHandleInputChange}
-                        onBlur={() => {}}
-                        />
-                    </div>
-                    <Button size={"medium"} variant={"contained"} onClick={() => {onHandleInsert(endTime, inputValue)}}>Confirm</Button>
-                </div>
-            </Box>
-        </Modal>
-    </div>
+                </Box>
+            </Modal>
+        </div>
     );
-
 }
 
 export default AddSubtitleModal;

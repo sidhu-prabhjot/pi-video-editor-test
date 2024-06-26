@@ -70,6 +70,12 @@
     transition: opacity 0.1s;
 }
 
+/*loading styling*/
+.list-loading-spinner-container {
+    position: absolute;
+    z-index: 999999;
+}
+
 @media only screen and (max-width: 1000px) {
     .export-button {
         height: 38px!important;
