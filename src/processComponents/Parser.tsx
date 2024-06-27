@@ -49,6 +49,12 @@ export const parseVTTFile = (fileData, idMap) => {
     console.log("parsed data: ", tree.cues);
 
     tree.cues.forEach((data) => {
+        if(data.alignment === "end") {
+            data.alignment = "right";
+        } else if (data.alignment === "start") {
+            data.alignment = "left";
+        }
+
         let newAction = {
             id: `action${idRef}`,
             start: data.startTime,

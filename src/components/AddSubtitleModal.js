@@ -34,6 +34,7 @@ const AddSubtitleModal = ({
     endTime,
     startTime,
     data,
+    onHandleDisplayListLoader,
 }) => {
     const [displayError, setDisplayError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -46,21 +47,30 @@ const AddSubtitleModal = ({
         }
     }
 
+    const sleep = async (ms) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     const handleConfirmClick = async () => {
         try {
             if (!startTime) {
                 startTime = subtitleObject.end;
             }
-            if (!endTime) {
+            if (!endTime && data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
                 endTime = data[0].actions[subtitleObject.data.subtitleNumber + 1].start;
+            } else if(!endTime && !data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
+                endTime = subtitleObject.end + 1;
             }
             setErrorMsg("");
             setDisplayError(false);
+            onHandleDisplayListLoader(true);
             await onHandleInsert(startTime, endTime, inputValue, subtitleObject);
+            onHandleDisplayListLoader(false);
         } catch (error) {
             console.log(error);
             setErrorMsg(error.message);
             setDisplayError(true);
+            onHandleDisplayListLoader(false);
         }
     }
 
@@ -105,7 +115,7 @@ const AddSubtitleModal = ({
                                 required
                                 id="outlined-required"
                                 label="End Time"
-                                defaultValue={data[0].actions[subtitleObject.data.subtitleNumber] ? `${data[0].actions[subtitleObject.data.subtitleNumber + 1].start}` : ""}
+                                defaultValue={data[0].actions[subtitleObject.data.subtitleNumber + 1] ? `${data[0].actions[subtitleObject.data.subtitleNumber + 1].start}` : subtitleObject.end + 1}
                                 size={"small"}
                                 onChange={onHandleEndInputChange}
                             />

@@ -24,6 +24,7 @@ const ListItem = ({
     handleAlignmentChange,
     onHandleMerge,
     onHandleSplit,
+    onHandleDisplayListLoader,
 }) => {
 
     const [checked, setChecked] = useState(false);
@@ -54,14 +55,21 @@ const ListItem = ({
         onHandleLinePositionChange(event.target.value, subtitleObject);
     };
 
-    const onHandleMergeClick = () => {
-        onHandleMerge(subtitleObject);
-        onSetParentData();
+    const onHandleMergeClick = async () => {
+        onHandleDisplayListLoader(true);
+        await onHandleMerge(subtitleObject);
+        onHandleDisplayListLoader(false);
     };
 
-    const onHandleSplitClick = () => {
-        onHandleSplit(subtitleObject);
+    const onHandleSplitClick = async () => {
+        onHandleDisplayListLoader(true)
+        await onHandleSplit(subtitleObject);
+        onHandleDisplayListLoader(false);
     };
+
+    const sleep = async (ms) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     return (
         <li id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ backgroundColor: subtitleObject.data.backgroundColor }} onClick={() => handleListClick(subtitleObject)} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
@@ -70,9 +78,11 @@ const ListItem = ({
                     <p className="checkbox-text">Edit Select</p>
                     <Checkbox size={"small"} className="checkbox" onChange={onClickChange} checked={subtitleObject.data.toEdit} />
                 </div>
-                <div onClick={(e) => {
+                <div onClick={async (e) => {
                     e.stopPropagation();
-                    deleteSubtitle(subtitleObject)
+                    onHandleDisplayListLoader(true);
+                    await deleteSubtitle(subtitleObject)
+                    onHandleDisplayListLoader(false);
                     }}>
                     <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                 </div>

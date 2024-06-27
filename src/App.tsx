@@ -81,9 +81,6 @@ const App = () => {
   //handling link inserts for the video
   const [linkInputValue, setLinkInputValue] = useState("");
 
-  //search bar related states
-  const [actionData, setActionData] = useState([]);
-
   //timeline customization
   const [zoom, setZoom] = useState(5);
   const [timelineWidth, setTimelineWidth] = useState(160);
@@ -110,6 +107,9 @@ const App = () => {
   //responsive design states
   const [searchBarWidth, setSearchBarWidth] = useState(200);
   const [listRowHeight, setListRowHeight] = useState(220);
+
+  //for switching between buttons
+  const [displaySelectAll, setDisplaySelectAll] = useState(true);
 
   //loaders
   const [displayListLoader, setDisplayListLoader] = useState(false);
@@ -187,7 +187,6 @@ const App = () => {
 
   const generateUniqueIdNumber = () => {
     //generating a unique id means new subtitle so clear all previous highligh colors
-    setDisplayListLoader(true);
     data[0].actions.forEach(action => {
       action.data.backgroundColor = "#E5E5E5";
     })
@@ -202,14 +201,11 @@ const App = () => {
     }
     tempIdMap[subtitleNumber] = "";
     setIdMap({...tempIdMap});
-    setDisplayListLoader(false);
     return subtitleNumber + 1;
   }
 
   //for inserting a subtitle to the dataset
   const insertSubtitle = async (startTime, endTime, content, currentSubtitle) => {
-
-    setDisplayListLoader(true);
 
     console.log("start time for insertion: ", startTime);
     console.log("end time for insertion: ", endTime);
@@ -251,15 +247,17 @@ const App = () => {
         backgroundColor: "#E5E5E5",
       } 
     }
+
     let tempArray = cloneDeep(data);
     tempArray[0].actions.splice(currentSubtitle.data.subtitleNumber + 1, 0, newAction);
+
     reassignSubtitleNumbers(tempArray);
     setData([...tempArray]);
     await update(currentSubtitle, 5);
-    setDisplayListLoader(false);
+
     closeModal();
 
-    }
+  }
 
   const updateData = async (tempArray) => {
     setData([...tempArray]);
@@ -268,7 +266,6 @@ const App = () => {
 
   //deleting from the entire dataset
   const deleteSubtitle = async (action) => {
-    setDisplayListLoader(true);
 
     console.log("deleting: ", action);
 
@@ -301,12 +298,10 @@ const App = () => {
       await update(fallbackAction, 5);
     }
 
-    setDisplayListLoader(false);
-
   }
 
   //merge two subtitles together
-  const onHandleMerge = (subtitleObject) => {
+  const mergeSubtitle = async (subtitleObject) => {
 
     let mergedActions = [];
     let i = 0;
@@ -340,20 +335,18 @@ const App = () => {
 
     }
 
-    update(subtitleObject);
-
     //merge the leftover element
     if(i < length) {
       mergedActions.push(actions[i]);
     }
-
     console.log("actions after merge: ", mergedActions);
 
     let tempData = data;
     tempData[0].actions = [...mergedActions];
-    setData([...tempData]);
 
-    update(subtitleObject);
+    reassignSubtitleNumbers(tempData);
+    await updateData(tempData);
+    await update(subtitleObject, 5);
 
   }
 
@@ -458,11 +451,7 @@ const App = () => {
   
     // Reassign subtitle numbers
     reassignSubtitleNumbers(tempArray);
-  
-    // Update the state with the new array
     setData([...tempArray]);
-  
-    // Update the current subtitle object with the new end time immutably
     await update(currentSubtitleObject, 5);
   };
   
@@ -722,6 +711,10 @@ const App = () => {
     setEndTimeInputValue(event.target.value);
   }
 
+  const handleDisplayListLoader = (valueToSet) => {
+    setDisplayListLoader(valueToSet);
+  }
+
 
   ///////////////////////////////////////////////////////////////// modal functions
 
@@ -750,14 +743,20 @@ const App = () => {
 
     console.log("action used in update shift: ", action);
 
-    if(shift + action.data.subtitleNumber < data[0].actions.length) {
-      await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
+    if(data[0].actions.length < 100) {
+      //if there is not room to shift, then force an update
+      console.log("forcing an update");
+      setData([...data]);
     } else {
-      await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
-    }
-
-    if(action && action.data) {
-      await listRef.current.scrollToRow(action.data.subtitleNumber);
+      if(shift + action.data.subtitleNumber < data[0].actions.length) {
+        await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
+      } else {
+        await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
+      }
+  
+      if(action && action.data) {
+        await listRef.current.scrollToRow(action.data.subtitleNumber);
+      }
     }
 
     action.data.backgroundColor = "#FCA311";
@@ -803,12 +802,43 @@ const App = () => {
     }
   }
 
+  const selectAllForEdit = async () => {
+    let tempData = cloneDeep(data);
+    tempData[0].actions.forEach(action => {
+      action.data.toEdit = true;
+    })
+    setData([...tempData]);
+    setDisplaySelectAll(false);
+    await update(currentSubtitle);
+  }
+
+  const unselectAllForEdit = async () => {
+    let tempData = cloneDeep(data);
+    tempData[0].actions.forEach(action => {
+      action.data.toEdit = false;
+    })
+    setData([...tempData]);
+    setDisplaySelectAll(true);
+    await update(currentSubtitle);
+  }
+
+  const getSelectAllButton = () => {
+    if(displaySelectAll) {
+      return <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={() => selectAllForEdit()}>Select All</Button>;
+    } else {
+      return <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={() => unselectAllForEdit()}>Unselect All</Button>
+    }
+  }
+
+  const sleep = async (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   //////////////////////////////////////////////////////////////////////////// React hooks utilization
 
   useEffect(() => {
     console.log("current dataset: ", data);
     console.log("current edit list: ", editList);
-    setActionData([...data[0].actions]);
     resyncTime();
   }, [data])
 
@@ -841,8 +871,9 @@ const App = () => {
           handleListClick={handleListClick}
           openModal={openModal}
           handleAlignmentChange={handleAlignmentChange}
-          onHandleMerge={onHandleMerge}
+          onHandleMerge={mergeSubtitle}
           onHandleSplit={splitSubtitle}
+          onHandleDisplayListLoader={handleDisplayListLoader}
         />
       </div>
     );
@@ -864,13 +895,15 @@ const App = () => {
           startTime={startTimeInputValue}
           endTime={endTimeInputValue} 
           data={data}
+          onHandleDisplayListLoader={handleDisplayListLoader}
         />
       </div>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
         <div className="scroll-container">
         <div>
           <div className={"search-bar-container"}>
-            <SideListSearch searchBarWidth={searchBarWidth} onHandleResultClick={handleResultClick} dataObjects={actionData} />
+            <SideListSearch searchBarWidth={searchBarWidth} onHandleResultClick={handleResultClick} dataObjects={data ? data[0].actions : []} />
+            {getSelectAllButton()}
             <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div className={"drag-drop-container"}>
               <DragDrop onVideoUpload={handleOnVideoUpload} />
