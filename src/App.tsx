@@ -248,10 +248,15 @@ const App = () => {
       } 
     }
 
-    let tempArray = cloneDeep(data);
-    tempArray[0].actions.splice(currentSubtitle.data.subtitleNumber + 1, 0, newAction);
+    let tempArray = data;
 
-    reassignSubtitleNumbers(tempArray);
+    const updateArray = async () => {
+      tempArray[0].actions.splice(currentSubtitle.data.subtitleNumber + 1, 0, newAction);
+    }
+
+    await updateArray();
+
+    await reassignSubtitleNumbers(tempArray);
     setData([...tempArray]);
     await update(currentSubtitle, 5);
 
@@ -287,15 +292,22 @@ const App = () => {
     }
 
     if(data[0].actions.length > 1) {
+
       const tempArray = data;
 
-      tempArray[0].actions.splice(action.data.subtitleNumber, 1);
+      const updateArray = async () => {
+        tempArray[0].actions.splice(action.data.subtitleNumber, 1);
+      }
+
+      await updateArray();
 
       console.log("fallback action: ", fallbackAction);
       
-      reassignSubtitleNumbers(tempArray);
-      await updateData(tempArray);
-      await update(fallbackAction, 5);
+      await reassignSubtitleNumbers(tempArray);
+      setData([...tempArray]);
+      await update(currentSubtitle, 5);
+
+      closeModal();
     }
 
   }
@@ -341,10 +353,18 @@ const App = () => {
     }
     console.log("actions after merge: ", mergedActions);
 
+    // Clone the existing data array
     let tempData = data;
-    tempData[0].actions = [...mergedActions];
 
-    reassignSubtitleNumbers(tempData);
+    const updateArray = async () => {
+      let tempData = data;
+      tempData[0].actions = [...mergedActions];
+    }
+
+    await updateArray();
+
+    await reassignSubtitleNumbers(tempData);
+    console.log("data prior to updating after merge: ", tempData);
     await updateData(tempData);
     await update(subtitleObject, 5);
 
@@ -441,16 +461,21 @@ const App = () => {
         backgroundColor: "#E5E5E5",
       }
     };
-  
-    // Clone the existing data array
-    let tempArray = cloneDeep(data);
 
-    tempArray[0].actions[currentSubtitleObject.data.subtitleNumber].end = (currentSubtitleObject.end + currentSubtitleObject.start) / 2;
-    // Insert the new subtitle object into the array at the correct position
-    tempArray[0].actions.splice(newAction.data.subtitleNumber, 0, newAction);
+    // Clone the existing data array
+    let tempArray = data;
+  
+    const updateArray = async () => {
+
+      tempArray[0].actions[currentSubtitleObject.data.subtitleNumber].end = (currentSubtitleObject.end + currentSubtitleObject.start) / 2;
+      // Insert the new subtitle object into the array at the correct position
+      tempArray[0].actions.splice(newAction.data.subtitleNumber, 0, newAction);
+    }
+
+    await updateArray();
   
     // Reassign subtitle numbers
-    reassignSubtitleNumbers(tempArray);
+    await reassignSubtitleNumbers(tempArray);
     setData([...tempArray]);
     await update(currentSubtitleObject, 5);
   };
@@ -740,12 +765,12 @@ const App = () => {
   ////////////////////////////////////////////////////////////////////////////////// other helper functions
 
   const update = async (action, shift=2) => {
-
-    console.log("action used in update shift: ", action);
-
     if(data[0].actions.length < 100) {
       //if there is not room to shift, then force an update
       console.log("forcing an update");
+      console.log("working with data: ", data);
+      await listRef.current.scrollToRow(action.data.subtitleNumber + 5);
+      await listRef.current.scrollToRow(action.data.subtitleNumber - 5);
       setData([...data]);
     } else {
       if(shift + action.data.subtitleNumber < data[0].actions.length) {
@@ -753,14 +778,15 @@ const App = () => {
       } else {
         await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
       }
-  
-      if(action && action.data) {
-        await listRef.current.scrollToRow(action.data.subtitleNumber);
-      }
     }
-
+    
+    if(action && action.data) {
+      await listRef.current.scrollToRow(action.data.subtitleNumber);
+    }
+  
     action.data.backgroundColor = "#FCA311";
   }
+  
 
   //resyncs the player and timeline at a specifc subtitle
   const setTime = async (action) => {
@@ -787,16 +813,16 @@ const App = () => {
   const getDisplayListLoader = () => {
     if(displayListLoader) {
       return <div className={"list-loading-spinner-container"} style={{display: `flex`, top: 200, left: 200}}>
-      LOADING
-    </div>;
+        <CircularProgress />
+      </div>;
     } else {
       return <div className={"list-loading-spinner-container"} style={{display: `none`, top: 200, left: 200}}>
-      LOADING
-    </div>;
+        <CircularProgress />
+      </div>;
     }
   }
 
-  const reassignSubtitleNumbers = (data) => {
+  const reassignSubtitleNumbers = async (data) => {
     for(let i = 0; i < data[0].actions.length; i++) {
       data[0].actions[i].data.subtitleNumber = i;
     }

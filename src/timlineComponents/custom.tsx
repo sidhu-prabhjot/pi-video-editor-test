@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import { FC } from 'react';
 import { CustomTimelineAction, CusTomTimelineRow } from './mock';
 import '../timelineStyles/Timeline.css';
 
@@ -16,7 +16,7 @@ export const CustomRender0: FC<CustomRenderProps> = ({ action, row}) => {
   );
 };
 
-export const CustomRender1: FC<CustomRenderProps> = ({ action, row, onActionClick }) => {
+export const CustomRender1: FC<CustomRenderProps> = ({ action, onActionClick }) => {
   return (
     <div className={'effect1 action-container'} onClick={() => onActionClick(action)}>
       <div className={`effect1-text action-content`}>{`${action.data.name}`}</div>

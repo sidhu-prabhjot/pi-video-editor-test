@@ -53,6 +53,8 @@ export const parseVTTFile = (fileData, idMap) => {
             data.alignment = "right";
         } else if (data.alignment === "start") {
             data.alignment = "left";
+        } else if (data.alignment === "middle") {
+            data.alignment = "center";
         }
 
         let newAction = {
