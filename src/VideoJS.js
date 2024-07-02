@@ -1,8 +1,10 @@
 import {useEffect, useRef} from 'react';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
+import './styles/Subtitle.css';
+import './styles/Main.css';
 
-export const VideoJS = ({options, onReady}) => {
+export const VideoJS = ({options, onReady, currentSubtitle, alignment, linePosition}) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
 
@@ -44,8 +46,14 @@ export const VideoJS = ({options, onReady}) => {
   }, [playerRef]);
 
   return (
-    <div style={{zIndex: "0"}} data-vjs-player>
-      <div style={{zIndex: "0"}} ref={videoRef} />
+    <div className={"video-js-container"} style={{margin: "4px"}}>
+      <div className={"video-container"} style={{overflow:"hidden"}} ref={videoRef}>
+      <div id={"subtitle"} className={"video-js-subtitle"} style={{justifyContent: `${alignment}`}}>
+            <div style={{backgroundColor: "transparent", padding: "4px 16px 4px 16px"}}>
+              {currentSubtitle.data.name !== "" ? <p style={{color:"#ffffff",margin:"0px", padding:"2px", backgroundColor: "#000000", top: `${linePosition}%`, position:"relative"}}>{currentSubtitle.data.name}</p> : <p></p>}
+            </div>
+      </div>
+      </div>
     </div>
   );
 }

@@ -60,8 +60,8 @@ const EditAllModal = ({
         handleYAlignChange(event.target.value);
     }
 
-    const confirmEdit = () => {
-        editAllSelected(removeAll);
+    const confirmEdit = async () => {
+        await editAllSelected(removeAll);
         onCloseModal();
     }
 
@@ -103,8 +103,7 @@ const EditAllModal = ({
                             label="Vertical"
                             defaultValue={100}
                             size={"small"}
-                            onChange={handleInputChange}
-                            onBlur={() => {}}
+                            onBlur={(e) => {handleInputChange(e)}}
                             />
                         </div>
                     </div>

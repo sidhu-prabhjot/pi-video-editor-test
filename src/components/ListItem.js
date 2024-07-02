@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 //components
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
-import { faCirclePlus, faCodeMerge, faClone } from '@fortawesome/free-solid-svg-icons';
+import { faCirclePlus, faCodeMerge, faClone, faGear} from '@fortawesome/free-solid-svg-icons';
 import Checkbox from '@mui/material/Checkbox';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -13,6 +13,7 @@ import '../styles/List.css';
 
 const ListItem = ({
     subtitleObject,
+    currentSubtitle,
     onHandleStartTimeChange,
     onSetParentData,
     onHandleChange,
@@ -25,10 +26,12 @@ const ListItem = ({
     onHandleMerge,
     onHandleSplit,
     onHandleDisplayListLoader,
+    measure,
+    forceUpdate,
 }) => {
 
     const [checked, setChecked] = useState(false);
-    const [display, setDisplay] = useState("none");
+    const [display, setDisplay] = useState(0);
 
     const onClickChange = () => {
         subtitleObject.data.toEdit = !subtitleObject.data.toEdit;
@@ -71,12 +74,38 @@ const ListItem = ({
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    useEffect(() => {
+        measure();
+    }, [subtitleObject.data.advancedEdit]);
+
     return (
-        <li id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ backgroundColor: subtitleObject.data.backgroundColor }} onClick={() => handleListClick(subtitleObject)} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
+        <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ backgroundColor: subtitleObject.data.backgroundColor}} onClick={async () => {
+            const removeHighlight = async () => {
+                currentSubtitle.data.backgroundColor = "#E5E5E5";
+            }
+
+            await removeHighlight();
+            handleListClick(subtitleObject)
+            }} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
             <div className="toolbar">
                 <div className="checkbox-container">
                     <p className="checkbox-text">Edit Select</p>
                     <Checkbox size={"small"} className="checkbox" onChange={onClickChange} checked={subtitleObject.data.toEdit} />
+                    <div>
+                        <FontAwesomeIcon className={"open-advanced-button clickable-icon"} icon={faGear} onClick = {async (e) => {
+                            e.stopPropagation();
+
+                            const open = async () => {
+                                if(subtitleObject.data.advancedEdit === false) {
+                                    subtitleObject.data.advancedEdit = true;
+                                } else {
+                                    subtitleObject.data.advancedEdit = false;
+                                }
+                            }
+                            await open();
+                            await forceUpdate(subtitleObject);
+                        }} />
+                    </div>
                 </div>
                 <div onClick={async (e) => {
                     e.stopPropagation();
@@ -97,6 +126,7 @@ const ListItem = ({
                         defaultValue={subtitleObject.start}
                         size={"small"}
                         onChange={onHandleStartTimeInputChange}
+                        onClick = {(event) => event.stopPropagation()}
                         onBlur={onSetParentData}
                     />
                 </div>
@@ -109,6 +139,7 @@ const ListItem = ({
                         defaultValue={subtitleObject.data.name}
                         size={"small"}
                         onChange={onHandleInputChange}
+                        onClick = {(event) => event.stopPropagation()}
                         onBlur={onSetParentData}
                     />
                 </div>
@@ -121,12 +152,12 @@ const ListItem = ({
                         defaultValue={subtitleObject.end}
                         size={"small"}
                         onChange={onHandleEndTimeInputChange}
+                        onClick = {(event) => event.stopPropagation()}
                         onBlur={onSetParentData}
                     />
                 </div>
             </div>
-            <p className={"alignment-title"}>Alignment:</p>
-            <div className={"change-alignment-container"}>
+            <div className={"change-alignment-container"} style={{display: subtitleObject.data.advancedEdit ? "flex" : "none"}}>
                 <div className={"alignment-container horizontal-alignment-container"}>
                     <p>Horizontal: </p>
                     <div className={"alignment-button-container"}>
@@ -156,22 +187,23 @@ const ListItem = ({
                         defaultValue={subtitleObject.data.linePosition}
                         size={"small"}
                         onChange={onHandleLinePositionInputChange}
+                        onClick = {(event) => event.stopPropagation()}
                         onBlur={onSetParentData}
                     />
                 </div>
             </div>
             <div 
                 className={"add-subtitle-button-container"} 
-                onMouseEnter={() => setDisplay("flex")}
-                onMouseLeave={() => setDisplay("none")}
+                onMouseEnter={() => setDisplay(100)}
+                onMouseLeave={() => setDisplay(0)}
             >
-                <FontAwesomeIcon onClick={() => onHandleSplitClick()} style={{ display: display }} className={"first-merge-button merge-subtitle-button clickable-icon"} icon={faClone} />
+                <FontAwesomeIcon onClick={() => onHandleSplitClick()} style={{ opacity: display, transition: "opacity 0.2s" }} className={"first-merge-button merge-subtitle-button clickable-icon"} icon={faClone} />
                 <div onClick={() => openModal(subtitleObject.end)}>
-                    <FontAwesomeIcon style={{ display: display }} className={"add-subtitle-button clickable-icon"} icon={faCirclePlus} />
+                    <FontAwesomeIcon style={{ opacity: display, transition: "opacity 0.2s"  }} className={"add-subtitle-button clickable-icon"} icon={faCirclePlus} />
                 </div>
-                <FontAwesomeIcon onClick={() => onHandleMergeClick()} style={{ display: display }} className={"second-merge-button merge-subtitle-button clickable-icon"} icon={faCodeMerge} />
+                <FontAwesomeIcon onClick={() => onHandleMergeClick()} style={{ opacity: display, transition: "opacity 0.2s"  }} className={"second-merge-button merge-subtitle-button clickable-icon"} icon={faCodeMerge} />
             </div>
-        </li>
+        </div>
     );
 };
 

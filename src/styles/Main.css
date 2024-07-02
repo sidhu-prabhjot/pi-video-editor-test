@@ -14,20 +14,18 @@
 
 .toolbar-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding: 10px 8px 0px 8px;
 }
 
 .video-player-container {
     position: relative;
-    padding: 6px;
 }
 
 .search-bar-container {
     display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    padding: 8px 0px 0px 0px;
+    align-items: end;
+    padding: 4px 0px 0px 4px;
 }
 
 #free-solo-demo {
@@ -58,7 +56,14 @@
 .player-config {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0px 8px 0px 8px;
+}
+
+.autoscroll-switch-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 
 .autoscroll-switch-text {
@@ -74,6 +79,14 @@
 .list-loading-spinner-container {
     position: absolute;
     z-index: 999999;
+}
+
+.virtual-list-container {
+    height: 0px!important;
+}
+
+.export-button {
+    margin: 0px 8px 0px 0px!important;
 }
 
 @media only screen and (max-width: 1000px) {

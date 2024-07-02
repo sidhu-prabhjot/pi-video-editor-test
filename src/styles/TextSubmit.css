@@ -1,6 +1,7 @@
 .text-submit-container {
     display: flex;
     align-items: center;
+    margin: 8px 8px 0px 4px;
 }
 
 .submit-button-container {

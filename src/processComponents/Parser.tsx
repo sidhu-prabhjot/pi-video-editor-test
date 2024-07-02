@@ -1,4 +1,6 @@
+import {useState} from 'react'
 import {WebVTTParser} from 'webvtt-parser';
+import SrtParser from '@qgustavor/srt-parser'
 import {TimelineAction, TimelineRow} from '@xzdarcy/react-timeline-editor';
 import Vtt from 'vtt-creator';
 import { generateSRT } from 'subtitle-generator';
@@ -19,6 +21,7 @@ interface CustomTimelineAction extends TimelineAction {
         textPosition: string;
         toEdit: boolean;
         backgroundColor: string;
+        advancedEdit: boolean,
     };
 }
 
@@ -48,6 +51,8 @@ export const parseVTTFile = (fileData, idMap) => {
 
     console.log("parsed data: ", tree.cues);
 
+    idRef = 0;
+
     tree.cues.forEach((data) => {
         if(data.alignment === "end") {
             data.alignment = "right";
@@ -57,11 +62,22 @@ export const parseVTTFile = (fileData, idMap) => {
             data.alignment = "center";
         }
 
+        if(data.linePosition === "auto") {
+            data.linePosition = 85;
+        }
+
+        //check for negative numbers in linePosition (negative means percentage from bottom)
+        if(data.linePosition < 0) {
+            let tempLine = 100 - (data.linePosition * -1);
+            data.linePosition = tempLine;
+        }
+
         let newAction = {
             id: `action${idRef}`,
             start: data.startTime,
             end: data.endTime,
             effectId: 'effect1',
+            
             data: {
                 src: '/audio/audio.mp3',
                 name: `${data.text}`,
@@ -74,6 +90,7 @@ export const parseVTTFile = (fileData, idMap) => {
                 textPosition: data.textPosition,
                 toEdit: false,
                 backgroundColor: "#E5E5E5",
+                advancedEdit: false,
             },
         }
         idMap[subtitleNumber] = "";
@@ -84,6 +101,69 @@ export const parseVTTFile = (fileData, idMap) => {
 
     return mockData;
 
+}
+
+const srtParser = new SrtParser()
+
+export const parseSRTFile = (fileData, idMap) => {
+    mockData[0].actions = [];
+
+    let subtitleNumber = 0;
+
+    let file = `${fileData}`;
+
+    const parsed = srtParser.fromSrt(fileData);
+    console.log(parsed)
+
+    //reset some values as a precaution
+    idRef = 0;
+
+    parsed.forEach((data) => {
+
+        let newStartTime = String(data.startTime).replace(/,/g, ".");
+        let startTimeArray = newStartTime.split(':'); // split it at the colons
+        let startTime = (+startTimeArray[0]) * 60 * 60 + (+startTimeArray[1]) * 60 + (+startTimeArray[2]); 
+
+        let newEndTime = String(data.endTime).replace(/,/g, ".");
+        let endTimeArray = newEndTime.split(':');
+        let endTime = (+endTimeArray[0]) * 60 * 60 + (+endTimeArray[1]) * 60 + (+endTimeArray[2]); 
+
+        console.log("start time: ", newStartTime, " | end time: ", newEndTime)
+
+        let newAction = {
+            id: `action${idRef}`,
+            start: startTime,
+            end: endTime,
+            effectId: 'effect1',
+            data: {
+                src: '/audio/audio.mp3',
+                name: `${data.text}`,
+                subtitleNumber: subtitleNumber,
+                alignment: "center",
+                direction: "",
+                lineAlign: "",
+                linePosition: "85",
+                size: 100,
+                textPosition: "",
+                toEdit: false,
+                backgroundColor: "#E5E5E5",
+                advancedEdit: false,
+            },
+        }
+        idMap[subtitleNumber] = "";
+        subtitleNumber++;
+        idRef++;
+        mockData[0].actions.push(newAction);
+    });
+
+    return mockData;
+
+}
+
+export const parseJSONFile = (fileData) => {
+    console.log(JSON.parse(fileData));
+
+    return JSON.parse(fileData);
 }
 
 export const generateVtt = (mockData:CusTomTimelineRow[]) => {

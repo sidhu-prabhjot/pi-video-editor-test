@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
+import {TimelineAction} from '@xzdarcy/react-timeline-editor';
+
 import '../styles/Main.css';
-import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
+import '../styles/Subtitle.css';
 
 
 interface CustomTimelineAction extends TimelineAction {
@@ -26,8 +28,10 @@ type SubtitleProps = {
 
 const Subtitle: React.FC<SubtitleProps> = ({ currentSubtitle, alignment, linePosition }) => {
 
+    console.log("current subtitle in subtitle component:", currentSubtitle.data.name);
+
     return (
-        <div id={"subtitle"} style={{display: "flex", width: "95%", top:"0", paddingLeft: "10px", paddingRight: "10px", position: "absolute", zIndex:"1", justifyContent: `${alignment}`, marginTop: `${linePosition}px`}}>
+        <div id={"subtitle"} style={{justifyContent: `${alignment}`, marginTop: `${linePosition}px`}}>
             {currentSubtitle.data.name !== "" ? <p style={{color:"#ffffff", marginTop: "0", backgroundColor: "#000000", padding:"2px"}}>{currentSubtitle.data.name}</p> : <p></p>}
         </div>
     );

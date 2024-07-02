@@ -22,19 +22,14 @@ const style = {
     p: 4,
 };
 
-const AddSubtitleModal = ({
+const EditJsonModal = ({
     isOpen,
     onCloseModal,
-    onHandleInsert,
-    subtitleObject,
-    onHandleInputChange,
-    onHandleStartInputChange,
-    onHandleEndInputChange,
-    inputValue,
-    endTime,
-    startTime,
-    data,
-    onHandleDisplayListLoader,
+    lastUpdatedBy,
+    note,
+    onHandleLastUpdatedByChange,
+    onHandleNoteChange,
+    onHandleConfirm,
 }) => {
     const [displayError, setDisplayError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -51,27 +46,8 @@ const AddSubtitleModal = ({
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    const handleConfirmClick = async () => {
-        try {
-            if (!startTime) {
-                startTime = subtitleObject.end;
-            }
-            if (!endTime && data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
-                endTime = data[0].actions[subtitleObject.data.subtitleNumber + 1].start;
-            } else if(!endTime && !data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
-                endTime = subtitleObject.end + 1;
-            }
-            setErrorMsg("");
-            setDisplayError(false);
-            onHandleDisplayListLoader(true);
-            await onHandleInsert(startTime, endTime, inputValue, subtitleObject);
-            onHandleDisplayListLoader(false);
-        } catch (error) {
-            console.log(error);
-            setErrorMsg(error.message);
-            setDisplayError(true);
-            onHandleDisplayListLoader(false);
-        }
+    const handleConfirmClick = () => {
+        onHandleConfirm();
     }
 
     return (
@@ -85,7 +61,7 @@ const AddSubtitleModal = ({
                 <Box sx={style}>
                     <div className="edit-selected-container">
                         <div className={"modal-header-container"}>
-                            <h2 className={"modal-header-heading"}>Add Subtitle: </h2>
+                            <h2 className={"modal-header-heading"}>Update JSON Metadata: </h2>
                             <div onClick={() => onCloseModal()}>
                                 <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                             </div>
@@ -94,30 +70,20 @@ const AddSubtitleModal = ({
                             <TextField
                                 required
                                 id="outlined-required"
-                                label="New Subtitle Text"
-                                defaultValue={""}
+                                label="Last Updated By"
                                 size={"small"}
-                                onBlur={(e) => {onHandleInputChange(e)}}
+                                defaultValue={lastUpdatedBy}
+                                onBlur={(e) => onHandleLastUpdatedByChange(e)}
                             />
                         </div>
                         <div className={"modal-alignment-container vertical-alignment-container"}>
                             <TextField
                                 required
                                 id="outlined-required"
-                                label="Start Time"
-                                defaultValue={subtitleObject ? `${subtitleObject.end}` : ""}
+                                label="Note"
                                 size={"small"}
-                                onBlur={(e) => {onHandleStartInputChange(e)}}
-                            />
-                        </div>
-                        <div className={"modal-alignment-container vertical-alignment-container"}>
-                            <TextField
-                                required
-                                id="outlined-required"
-                                label="End Time"
-                                defaultValue={data[0].actions[subtitleObject.data.subtitleNumber + 1] ? `${data[0].actions[subtitleObject.data.subtitleNumber + 1].start}` : subtitleObject.end + 1}
-                                size={"small"}
-                                onBlur={(e) => {onHandleEndInputChange(e)}}
+                                defaultValue={note}
+                                onBlur={(e) => onHandleNoteChange(e)}
                             />
                         </div>
                         {errorMessage()}
@@ -131,4 +97,4 @@ const AddSubtitleModal = ({
     );
 }
 
-export default AddSubtitleModal;
+export default EditJsonModal;

@@ -19,6 +19,7 @@ export interface CustomTimelineAction extends TimelineAction {
     textPosition: string;
     toEdit: boolean;
     backgroundColor: string;
+    advancedEdit: boolean;
   };
 }
 
@@ -56,6 +57,7 @@ export const mockData: CusTomTimelineRow[] = [
           textPosition: "",
           toEdit: false,
           backgroundColor: "#E5E5E5",
+          advancedEdit: false,
         },
       },
       {
@@ -75,6 +77,7 @@ export const mockData: CusTomTimelineRow[] = [
           textPosition: "",
           toEdit: false,
           backgroundColor: "#E5E5E5",
+          advancedEdit: false,
         },
       },
     ],

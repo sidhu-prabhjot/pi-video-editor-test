@@ -1,0 +1,13 @@
+.video-container .video-js-subtitle {
+    display: flex!important; 
+    top:0!important; 
+    position: absolute!important;
+    overflow: hidden;
+}
+
+.video-js-subtitle {
+    pointer-events: none;
+    z-index: 10!important;
+    height: 100%;
+    width: 100%;
+}
