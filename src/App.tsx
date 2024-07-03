@@ -19,10 +19,13 @@ import CircularProgress from '@mui/material/CircularProgress';
 import EditAllModal from './components/EditAllModal';
 import AddSubtitleModal from './components/AddSubtitleModal';
 import EditJsonModal from './components/EditJsonModal';
+import ResponseAlert from './components/ResponseAlert';
 import {List, AutoSizer, CellMeasurer, CellMeasurerCache} from 'react-virtualized';
 import './styles/List.css';
 import './styles/Main.css';
 import './styles/Subtitle.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleArrowLeft, faCircleArrowRight} from '@fortawesome/free-solid-svg-icons';
 
 ///////////////////////////////////////////////////////////////////////////// data control
 
@@ -102,9 +105,9 @@ const App = () => {
 
   //modal state management, primarily for opening and closing
   const [modalIsOpen, setIsOpen] = useState(false);
-  const [endTime, setEndTime] = useState(0);
   const [editAllModelIsOpen, setEditAllModelIsOpen] = useState(false);
   const [editJsonModalIsOpen, setEditJsonModalIsOpen] = useState(false);
+  //const [endTime, setEndTime] = useState(null);
 
   //for add subtitle modal
   const [inputValue, setInputValue] = useState("");
@@ -118,13 +121,17 @@ const App = () => {
 
   //responsive design states
   const [searchBarWidth, setSearchBarWidth] = useState(200);
-  const [listRowHeight, setListRowHeight] = useState(150);
 
   //for switching between buttons
   const [displaySelectAll, setDisplaySelectAll] = useState(true);
 
   //loaders
   const [displayListLoader, setDisplayListLoader] = useState(false);
+
+  //response alert
+  const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
+  const [responseAlertText, setResponseAlertText] = useState("this is some placeholder text");
+  const [responseAlertSeverity, setResponseAlertSeverity] = useState("success");
 
   ///////////////////////////////////////////////////////////////////////////////////////// component setup
 
@@ -149,6 +156,11 @@ const App = () => {
             currentSubtitleElement.style.opacity = "100";
           }
 
+            //resync timeline and player if it gets out of hand
+            if(timelineState.current.getTime() - playerRef.current.currentTime() > 0.1 || timelineState.current.getTime() - playerRef.current.currentTime() < -0.1) {
+              timelineState.current.setTime(playerRef.current.currentTime());
+            }
+
         },
         leave: ({ action }) => {
           (action as CustomTimelineAction).data.backgroundColor = "#E5E5E5";
@@ -172,19 +184,29 @@ const App = () => {
     })
 
     player.on('play', () => {
-      timelineState.current.play({});
       timelineState.current.setTime(player.currentTime());
+      timelineState.current.play({});
     })
 
     // You can handle player events here, for example:
     player.on('waiting', () => {
       videojs.log('player is waiting');
-      timelineState.current.play({});
+      timelineState.current.pause();
+      playerRef.current.currentTime(timelineState.current.getTime());
+      timelineState.current.setTime(playerRef.current.currentTime());
+      playerRef.current.currentTime(timelineState.current.getTime());
     });
+
+    player.on('playing', () => {
+      if(timelineState.current.isPaused) {
+        timelineState.current.play({});
+      }
+    })
 
     player.on('dispose', () => {
       videojs.log('player will dispose');
     });
+
   };
 
   //defining video player features
@@ -275,6 +297,8 @@ const App = () => {
 
     closeModal();
 
+    showResponseAlert("successfully inserted", "success");
+
   }
 
   const updateData = async (tempArray) => {
@@ -318,9 +342,12 @@ const App = () => {
       
       await reassignSubtitleNumbers(tempArray);
       setData([...tempArray]);
-      await update(currentSubtitle, 5);
+      await update(fallbackAction, 5);
+      await setTime(fallbackAction);
 
       closeModal();
+
+      showResponseAlert("successfully deleted", "success");
     }
 
   }
@@ -380,6 +407,9 @@ const App = () => {
     console.log("data prior to updating after merge: ", tempData);
     await updateData(tempData);
     await update(subtitleObject, 5);
+    await setTime(subtitleObject);
+
+    showResponseAlert("successfully merged", "success");
 
   }
 
@@ -492,25 +522,29 @@ const App = () => {
     await reassignSubtitleNumbers(tempArray);
     setData([...tempArray]);
     await update(currentSubtitleObject, 5);
+
+    showResponseAlert("successfully split", "success");
   };
   
   
 
   //////////////////////////////////////////////////////////////////////// editing a specific subtitle
 
-  const handleAlignmentChange = (subtitleObject, alignment) => {
+  const handleAlignmentChange = async (subtitleObject, alignment) => {
     subtitleObject.data.alignment = alignment;
     setData([...data]);
+    await setTime(subtitleObject);
 
     console.log("alignment change: ", alignment);
   }
 
-  const onHandleLinePositionChange = (newInput, subtitleObject) => {
+  const onHandleLinePositionChange = async (newInput, subtitleObject) => {
     if(newInput === "auto") {
       subtitleObject.data.linePosition = 100;
     } else if (!Number.isNaN(newInput)) {
       subtitleObject.data.linePosition = Number(newInput);
     }
+    await setTime(subtitleObject);
   }
 
   //for the edit all/all selected functionality
@@ -823,7 +857,7 @@ const App = () => {
   const openModal = async (end:number) => {
     await updateData([...data]);
     setIsOpen(true);
-    setEndTime(end);
+    // setEndTime(end);
   }
 
   const closeModal = () => {
@@ -867,13 +901,7 @@ const App = () => {
   //resyncs the player and timeline at a specifc subtitle
   const setTime = async (action) => {
     if(timelineState.current && playerRef.current) {
-      playerRef.current.currentTime(action.start);
-      timelineState.current.setTime(playerRef.current.currentTime());
-    }
-  }
-
-  const resyncTime = () => {
-    if(timelineState.current && playerRef.current) {
+      await playerRef.current.currentTime(action.start);
       timelineState.current.setTime(playerRef.current.currentTime());
     }
   }
@@ -926,12 +954,50 @@ const App = () => {
 
   const getSelectAllButton = () => {
     if(displaySelectAll) {
-      console.log("displaySelectAll: ", displaySelectAll);
       return <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={async () => await selectAllForEdit()}>Select All</Button>;
     } else {
-      console.log("displaySelectAll: ", displaySelectAll);
       return <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={async () => await unselectAllForEdit()}>Unselect All</Button>
     }
+  }
+
+  const handleSelectedLeftClick = async () => {
+    let i = currentSubtitle.data.subtitleNumber - 1;
+
+    while(i > 0 && data[0].actions[i].data.toEdit == false) {
+      i--;
+    }
+
+    console.log("closest subtitle on edit list above current: ", data[0].actions[i]);
+
+    //verify subtitle exists, and that it has been selected to edit
+    if(data[0].actions[i] && data[0].actions[i].data.toEdit == true) {
+      await setTime(data[0].actions[i]);
+      await update(data[0].actions[i], 5);
+    }
+
+  }
+
+  const handleSelectedRightClick = async () => {
+    let i = currentSubtitle.data.subtitleNumber + 1;
+
+    while(i < data[0].actions.length && data[0].actions[i].data.toEdit == false) {
+      i++;
+    }
+
+    //verify subtitle exists, and that it has been selected to edit
+    if(data[0].actions[i] && data[0].actions[i].data.toEdit == true) {
+      await setTime(data[0].actions[i]);
+      await update(data[0].actions[i], 5);
+    }
+
+  }
+  
+  const showResponseAlert = async (responseText, severity) => {
+      setResponseAlertText(responseText);
+      setResponseAlertSeverity(severity);
+      setDisplayResponseAlert(100);
+      await sleep(3000);
+      setDisplayResponseAlert(0);
   }
 
   const sleep = async (ms) => {
@@ -943,7 +1009,7 @@ const App = () => {
   useEffect(() => {
     console.log("current dataset: ", data);
     console.log("current edit list: ", editList);
-    resyncTime();
+    setDisplayListLoader(false);
   }, [data])
 
   useEffect(() => {
@@ -1047,6 +1113,9 @@ const App = () => {
             <div className={"drag-drop-container"}>
               <DragDrop onVideoUpload={handleOnVideoUpload} />
             </div>
+            <div className={"response-alert-container"} style={{opacity: displayResponseAlert}}>
+              <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity} />
+            </div>
           </div>
         </div>
           <div id={"subtitle-list-container-id"} className="subtitle-list-container">
@@ -1088,10 +1157,14 @@ const App = () => {
         </div>
         <div className={"video-container"}>
           <div className={"toolbar-container"}>
+            <div>
             <TextInput handleInputChange={handleFilenameInputChange} label={"File Name"}/>
-            <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
-            <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateSRT()}>Export SRT</Button>
-            <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => openEditJsonModal()}>Export JSON</Button>
+            </div>
+            <div>
+              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
+              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateSRT()}>Export SRT</Button>
+              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => openEditJsonModal()}>Export JSON</Button>
+            </div>
           </div>        
           <div className={"video-player-container"}>
             <VideoJS options={videoJsOptions} onReady={handlePlayerReady} currentSubtitle={currentSubtitle} alignment={currentSubtitle.data.alignment} linePosition={getLinePositionValue(currentSubtitle)} />
@@ -1101,9 +1174,13 @@ const App = () => {
       </div>
       <div className="player-config-row timeline-editor-engine main-row-2">
         <div className="player-config">
-          <div>
+          <div className={"list-edit-config-container"}>
             {getSelectAllButton()}
             <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
+            <div>
+              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={"selected-left-click selected-traverse-button clickable-icon"} icon={faCircleArrowLeft} />
+              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={"selected-right-click selected-traverse-button clickable-icon"} icon={faCircleArrowRight} />
+            </div>
           </div>
           <div className={"autoscroll-switch-container"}>
             <p className="autoscroll-switch-text">Autoscroll:</p>

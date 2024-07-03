@@ -61,13 +61,11 @@ const ListItem = ({
     const onHandleMergeClick = async () => {
         onHandleDisplayListLoader(true);
         await onHandleMerge(subtitleObject);
-        onHandleDisplayListLoader(false);
     };
 
     const onHandleSplitClick = async () => {
         onHandleDisplayListLoader(true)
         await onHandleSplit(subtitleObject);
-        onHandleDisplayListLoader(false);
     };
 
     const sleep = async (ms) => {
@@ -80,8 +78,9 @@ const ListItem = ({
 
     return (
         <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ backgroundColor: subtitleObject.data.backgroundColor}} onClick={async () => {
+            currentSubtitle.data.backgroundColor = "#E5E5E5";
             const removeHighlight = async () => {
-                currentSubtitle.data.backgroundColor = "#E5E5E5";
+                onHandleDisplayListLoader();
             }
 
             await removeHighlight();
@@ -89,7 +88,7 @@ const ListItem = ({
             }} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
             <div className="toolbar">
                 <div className="checkbox-container">
-                    <p className="checkbox-text">Edit Select</p>
+                    <p className="checkbox-text">{subtitleObject.data.subtitleNumber + 1} | Edit Select</p>
                     <Checkbox size={"small"} className="checkbox" onChange={onClickChange} checked={subtitleObject.data.toEdit} />
                     <div>
                         <FontAwesomeIcon className={"open-advanced-button clickable-icon"} icon={faGear} onClick = {async (e) => {
@@ -111,7 +110,6 @@ const ListItem = ({
                     e.stopPropagation();
                     onHandleDisplayListLoader(true);
                     await deleteSubtitle(subtitleObject)
-                    onHandleDisplayListLoader(false);
                     }}>
                     <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                 </div>

@@ -14,8 +14,10 @@
 
 .toolbar-container {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: end;
     padding: 10px 8px 0px 8px;
+    margin: 0px 0px 4px 0px;
 }
 
 .video-player-container {
@@ -25,7 +27,12 @@
 .search-bar-container {
     display: flex;
     align-items: end;
+    justify-content: space-around;
     padding: 4px 0px 0px 4px;
+}
+
+.response-alert-container {
+    transition: opacity 0.5s;
 }
 
 #free-solo-demo {
@@ -58,6 +65,16 @@
     align-items: center;
     justify-content: space-between;
     padding: 0px 8px 0px 8px;
+}
+
+.list-edit-config-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.selected-traverse-button {
+    margin: 0px 8px 0px 0px;
 }
 
 .autoscroll-switch-container {
