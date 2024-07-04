@@ -20,12 +20,13 @@ import EditAllModal from './components/EditAllModal';
 import AddSubtitleModal from './components/AddSubtitleModal';
 import EditJsonModal from './components/EditJsonModal';
 import ResponseAlert from './components/ResponseAlert';
+import InfoModal from './components/InfoModal';
 import {List, AutoSizer, CellMeasurer, CellMeasurerCache} from 'react-virtualized';
 import './styles/List.css';
 import './styles/Main.css';
 import './styles/Subtitle.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleArrowLeft, faCircleArrowRight} from '@fortawesome/free-solid-svg-icons';
+import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo} from '@fortawesome/free-solid-svg-icons';
 
 ///////////////////////////////////////////////////////////////////////////// data control
 
@@ -73,7 +74,7 @@ const App = () => {
 
   //STATE MANAGEMENT:
   const [currentSubtitle, setCurrentSubtitle] = useState({data: {
-    name: "placeholder",
+    name: "",
   }} as CustomTimelineAction);
   const [data, setData] = useState(mockData);
   const [overlaps, setOverlaps] = useState([]);
@@ -93,13 +94,7 @@ const App = () => {
   //handling link inserts for the video
   const [linkInputValue, setLinkInputValue] = useState("");
 
-  //timeline customization
-  const [zoom, setZoom] = useState(5);
-  const [timelineWidth, setTimelineWidth] = useState(160);
-  const [scaleSplit, setScaleSplit] = useState(6);
-
   //list of actions that need to be edited
-  const [editList, setEditList] = useState({});
   const [alignmentEdit, setAlignmentEdit] = useState(null);
   const [lineEdit, setLineEdit] = useState(-1);
 
@@ -107,6 +102,7 @@ const App = () => {
   const [modalIsOpen, setIsOpen] = useState(false);
   const [editAllModelIsOpen, setEditAllModelIsOpen] = useState(false);
   const [editJsonModalIsOpen, setEditJsonModalIsOpen] = useState(false);
+  const [infoModalIsOpen, setInfoModalIsOpen] = useState(false);
   //const [endTime, setEndTime] = useState(null);
 
   //for add subtitle modal
@@ -119,14 +115,12 @@ const App = () => {
   //button and switch toggling states
   const [switchState, setSwitchState] = useState(true);
 
-  //responsive design states
-  const [searchBarWidth, setSearchBarWidth] = useState(200);
-
   //for switching between buttons
   const [displaySelectAll, setDisplaySelectAll] = useState(true);
 
   //loaders
   const [displayListLoader, setDisplayListLoader] = useState(false);
+  const [listDisabledClass, setListDisabledClass] = useState("");
 
   //response alert
   const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
@@ -241,6 +235,8 @@ const App = () => {
   //for inserting a subtitle to the dataset
   const insertSubtitle = async (startTime, endTime, content, currentSubtitle) => {
 
+    setListDisabledClass("subtitle-list-container-disabled");
+
     console.log("start time for insertion: ", startTime);
     console.log("end time for insertion: ", endTime);
 
@@ -292,10 +288,13 @@ const App = () => {
     await updateArray();
 
     await reassignSubtitleNumbers(tempArray);
+    console.log("temp array before setting data: ", tempArray);
     setData([...tempArray]);
     await update(currentSubtitle, 5);
 
     closeModal();
+
+    await setTime(currentSubtitle);
 
     showResponseAlert("successfully inserted", "success");
 
@@ -308,6 +307,8 @@ const App = () => {
 
   //deleting from the entire dataset
   const deleteSubtitle = async (action) => {
+
+    setListDisabledClass("subtitle-list-container-disabled");
 
     console.log("deleting: ", action);
 
@@ -354,6 +355,8 @@ const App = () => {
 
   //merge two subtitles together
   const mergeSubtitle = async (subtitleObject) => {
+
+    setListDisabledClass("subtitle-list-container-disabled");
 
     let mergedActions = [];
     let i = 0;
@@ -409,16 +412,64 @@ const App = () => {
     await update(subtitleObject, 5);
     await setTime(subtitleObject);
 
-    showResponseAlert("successfully merged", "success");
-
   }
 
+  const splitSubtitle = async (currentSubtitleObject) => {
+
+    setListDisabledClass("subtitle-list-container-disabled");
+
+    console.log("splitting: ", currentSubtitleObject);
+  
+    // Create a new subtitle object based on the current subtitle
+    const newAction = {
+      id: `action${generateUniqueIdNumber()}`,
+      start: Math.round(((currentSubtitleObject.end + currentSubtitleObject.start) / 2) * 100) / 100,
+      end: currentSubtitleObject.end,
+      effectId: "effect1",
+      data: {
+        src: "/audio/bg.mp3",
+        name: currentSubtitleObject.data.name,
+        subtitleNumber: currentSubtitleObject.data.subtitleNumber + 1,
+        alignment: currentSubtitleObject.data.alignment,
+        direction: "",
+        lineAlign: "",
+        linePosition: currentSubtitleObject.data.linePosition,
+        size: 100,
+        textPosition: "",
+        toEdit: false,
+        backgroundColor: "#E5E5E5",
+        advancedEdit: false,
+      }
+    };
+
+    // Clone the existing data array
+    let tempArray = data;
+  
+    const updateArray = async () => {
+
+      tempArray[0].actions[currentSubtitleObject.data.subtitleNumber].end = (currentSubtitleObject.end + currentSubtitleObject.start) / 2;
+      // Insert the new subtitle object into the array at the correct position
+      tempArray[0].actions.splice(newAction.data.subtitleNumber, 0, newAction);
+    }
+
+    await updateArray();
+  
+    // Reassign subtitle numbers
+    await reassignSubtitleNumbers(tempArray);
+    setData([...tempArray]);
+    await update(currentSubtitleObject, 5);
+
+    await setTime(currentSubtitle);
+
+    showResponseAlert("successfully split", "success");
+  };
+
   // Function to sort actions by their start time
-  const sortActions = (actions) => {
+  const sortActions = async (actions) => {
     actions.sort((a, b) => a.start - b.start);
   };
 
-  const verifySubtitles = () => {
+  const verifySubtitles = async () => {
     let tempOverlapsArray = [];
     let validExport = true;
     let tempData = cloneDeep(data);
@@ -464,11 +515,16 @@ const App = () => {
     }
 
     tempData[0].actions[actions.length - 1].data.subtitleNumber = actions.length - 1; 
+
+    const updateTempData = async () => {
+      tempData[0].actions = [...actions];
+    }
   
     if (validExport) {
       console.log("sorted actions: ", actions);
       tempData[0].actions = [...actions];
       setData([...tempData]);
+      await update(currentSubtitle);
       return true;
     } else {
       console.log("invalid vtt, found overlapping subtitles");
@@ -476,57 +532,11 @@ const App = () => {
       setOverlaps([...tempOverlapsArray]);
       tempData[0].actions = [...actions];
       setData([...tempData]);
+      await update(currentSubtitle);
     }
 
     return false;
   };
-
-  const splitSubtitle = async (currentSubtitleObject) => {
-    console.log("splitting: ", currentSubtitleObject);
-  
-    // Create a new subtitle object based on the current subtitle
-    const newAction = {
-      id: `action${generateUniqueIdNumber()}`,
-      start: Math.round(((currentSubtitleObject.end + currentSubtitleObject.start) / 2) * 100) / 100,
-      end: currentSubtitleObject.end,
-      effectId: "effect1",
-      data: {
-        src: "/audio/bg.mp3",
-        name: currentSubtitleObject.data.name,
-        subtitleNumber: currentSubtitleObject.data.subtitleNumber + 1,
-        alignment: currentSubtitleObject.data.alignment,
-        direction: "",
-        lineAlign: "",
-        linePosition: currentSubtitleObject.data.linePosition,
-        size: 100,
-        textPosition: "",
-        toEdit: false,
-        backgroundColor: "#E5E5E5",
-        advancedEdit: false,
-      }
-    };
-
-    // Clone the existing data array
-    let tempArray = data;
-  
-    const updateArray = async () => {
-
-      tempArray[0].actions[currentSubtitleObject.data.subtitleNumber].end = (currentSubtitleObject.end + currentSubtitleObject.start) / 2;
-      // Insert the new subtitle object into the array at the correct position
-      tempArray[0].actions.splice(newAction.data.subtitleNumber, 0, newAction);
-    }
-
-    await updateArray();
-  
-    // Reassign subtitle numbers
-    await reassignSubtitleNumbers(tempArray);
-    setData([...tempArray]);
-    await update(currentSubtitleObject, 5);
-
-    showResponseAlert("successfully split", "success");
-  };
-  
-  
 
   //////////////////////////////////////////////////////////////////////// editing a specific subtitle
 
@@ -700,8 +710,12 @@ const App = () => {
   //move to the clicked subtitle on both the side list
   const handleListClick = async (subtitleObject) => {
 
-    console.log("clicked subtitle: ", subtitleObject.data.subtitleNumber);
+    currentSubtitle.data.backgroundColor = "#E5E5E5";
 
+    console.log("clicked subtitle: ", subtitleObject.data.subtitleNumber);
+    playerRef.current.currentTime(subtitleObject.start);
+
+    reassignSubtitleNumbers(data);
     await setTime(subtitleObject);
     await update(subtitleObject, 5);
 
@@ -709,6 +723,10 @@ const App = () => {
 
   //handles the scenario when a subtitle in the timeline is clicked
   const handleActionClick = async (action: CustomTimelineAction) => {
+    currentSubtitle.data.backgroundColor = "#E5E5E5";
+
+    playerRef.current.currentTime(action.start);
+    reassignSubtitleNumbers(data);
     await setTime(action);
     await update(action, 5);
   }
@@ -737,48 +755,57 @@ const App = () => {
   }
 
   const handleOnVideoUpload = (fileObject) => {
-
     // Initialize a FileReader
     const reader = new FileReader();
-
+  
     let tempIdMap = {};
-    
+  
     // Define what happens when the file is read successfully
     reader.onload = (event) => {
-      console.log("video load log: ", fileObject);
-
-      let result;
-
-      if(fileObject.name.includes(".vtt")) {
-        result = parseVTTFile(reader.result, tempIdMap);
-        setImportType("vtt");
-      } else if (fileObject.name.includes(".srt")) {
-        result = parseSRTFile(reader.result, tempIdMap);
-        setImportType("srt");
-      } else if (fileObject.name.includes(".json")) {
-        //result will need to be deconstructed into data and metadata
-        let initialResult = parseJSONFile(reader.result);
-        result = initialResult.data;
-        setMetaCreatedAt(initialResult.metaData.createdAt);
-        setMetaUpdatedAt(initialResult.metaData.updatedAt);
-        setMetaLastUpdatedBy(initialResult.metaData.lastUpdatedBy);
-        setMetaNote(initialResult.metaData.note);
-        setImportType("json");
+      try {
+        console.log("video load log: ", fileObject);
+  
+        let result;
+  
+        if (fileObject.name.includes(".vtt")) {
+          result = parseVTTFile(reader.result, tempIdMap);
+          setImportType("vtt");
+        } else if (fileObject.name.includes(".srt")) {
+          result = parseSRTFile(reader.result, tempIdMap);
+          setImportType("srt");
+        } else if (fileObject.name.includes(".json")) {
+          let initialResult = parseJSONFile(reader.result);
+          result = initialResult.data;
+          setMetaCreatedAt(initialResult.metaData.createdAt);
+          setMetaUpdatedAt(initialResult.metaData.updatedAt);
+          setMetaLastUpdatedBy(initialResult.metaData.lastUpdatedBy);
+          setMetaNote(initialResult.metaData.note);
+          setImportType("json");
+        }
+  
+        if (result === undefined) {
+          throw new Error("Parsing result is undefined.");
+        }
+  
+        setIdMap({ ...tempIdMap });
+        console.log("parsing result: ", result);
+        setData([...result]);
+  
+      } catch (error) {
+        console.log("Error while handling file content:", error.message);
+        showResponseAlert("Unable to load file content", "error");
       }
-
-      setIdMap({...tempIdMap});
-      console.log("parsing result: ", result);
-      setData([...result]);
     };
-    
+  
     // Read the file as text
     reader.readAsText(fileObject, 'UTF-8');
   };
+  
 
   //get starttime from the result that was clicked
-  const handleResultClick = (startTime) => {
-    timelineState.current.setTime(startTime);
-    playerRef.current.currentTime(timelineState.current.getTime());
+  const handleResultClick = async (action) => {
+    await setTime(action);
+    await update(action);
   }
 
   const handleFilenameInputChange = (event) => {
@@ -872,16 +899,27 @@ const App = () => {
     setEditJsonModalIsOpen(false);
   }
 
+  const openInfoModal = () => {
+    setInfoModalIsOpen(true);
+  }
+
+  const closeInfoModal = () => {
+    setInfoModalIsOpen(false);
+  }
+
   ////////////////////////////////////////////////////////////////////////////////// other helper functions
 
   const update = async (action, shift=2) => {
-    if(data[0].actions.length < 100) {
+    if(data[0].actions.length < 10) {
       //if there is not room to shift, then force an update
       console.log("forcing an update");
       console.log("working with data: ", data);
+      let tempData = data;
       await listRef.current.scrollToRow(action.data.subtitleNumber + 5);
       await listRef.current.scrollToRow(action.data.subtitleNumber - 5);
-      setData([...data]);
+      await listRef.current.scrollToRow(currentSubtitle.data.subtitleNumber - 5);
+      await reassignSubtitleNumbers(tempData);
+      setData([...tempData]);
     } else {
       if(shift + action.data.subtitleNumber < data[0].actions.length) {
         await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
@@ -928,6 +966,7 @@ const App = () => {
 
   const reassignSubtitleNumbers = async (data) => {
     for(let i = 0; i < data[0].actions.length; i++) {
+      data[0].actions[i].id = `action${i}`;
       data[0].actions[i].data.subtitleNumber = i;
     }
   }
@@ -954,9 +993,9 @@ const App = () => {
 
   const getSelectAllButton = () => {
     if(displaySelectAll) {
-      return <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={async () => await selectAllForEdit()}>Select All</Button>;
+      return <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={async () => await selectAllForEdit()}>Select All</Button>;
     } else {
-      return <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={async () => await unselectAllForEdit()}>Unselect All</Button>
+      return <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={async () => await unselectAllForEdit()}>Unselect All</Button>
     }
   }
 
@@ -1008,7 +1047,7 @@ const App = () => {
 
   useEffect(() => {
     console.log("current dataset: ", data);
-    console.log("current edit list: ", editList);
+    setListDisabledClass("");
     setDisplayListLoader(false);
   }, [data])
 
@@ -1020,6 +1059,14 @@ const App = () => {
     }
 
   }, [switchState])
+
+  useEffect(() => {
+      // Prompt confirmation when reload page is triggered
+      window.onbeforeunload = () => { return "" };
+          
+      // Unmount the window.onbeforeunload event
+      return () => { window.onbeforeunload = null };
+  }, []);
 
   ///////////////////////////////////////////////////////////////// rendering functions
 
@@ -1061,6 +1108,7 @@ const App = () => {
               onHandleSplit={splitSubtitle}
               onHandleDisplayListLoader={handleDisplayListLoader}
               forceUpdate={forceUpdate}
+              handleShowResponseAlert={showResponseAlert}
             />
           </div>
         )}
@@ -1105,20 +1153,26 @@ const App = () => {
           onHandleConfirm={generateJSON}
         />
       </div>
+      <div style={{zIndex: "9999"}}>
+        <InfoModal
+          isOpen={infoModalIsOpen}
+          onCloseModal={closeInfoModal}
+        />
+      </div>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
         <div className="scroll-container">
         <div>
           <div className={"search-bar-container"}>
-            <SideListSearch searchBarWidth={searchBarWidth} onHandleResultClick={handleResultClick} dataObjects={data ? data[0].actions : []} />
-            <div className={"drag-drop-container"}>
-              <DragDrop onVideoUpload={handleOnVideoUpload} />
-            </div>
-            <div className={"response-alert-container"} style={{opacity: displayResponseAlert}}>
-              <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity} />
+            <SideListSearch searchBarWidth={200} onHandleResultClick={handleResultClick} dataObjects={data ? data[0].actions : []} />
+            <div className={"alert-info-container"}>
+              <div className={"response-alert-container"} style={{opacity: displayResponseAlert}}>
+                <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity} />
+              </div>
+              <FontAwesomeIcon onClick={() => openInfoModal()} className={"info-modal-button clickable-icon"} icon={faCircleInfo} />
             </div>
           </div>
         </div>
-          <div id={"subtitle-list-container-id"} className="subtitle-list-container">
+          <div id={"subtitle-list-container-id"} className={"subtitle-list-container " + listDisabledClass}>
             {getDisplayListLoader()}
             <AutoSizer defaultHeight={100} defaultWidth={100}>
               {(size) => {
@@ -1157,34 +1211,37 @@ const App = () => {
         </div>
         <div className={"video-container"}>
           <div className={"toolbar-container"}>
-            <div>
-            <TextInput handleInputChange={handleFilenameInputChange} label={"File Name"}/>
-            </div>
-            <div>
-              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
-              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateSRT()}>Export SRT</Button>
-              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => openEditJsonModal()}>Export JSON</Button>
+            <TextSubmit handleInputChange={handleLinkInputChange} handleSubmit={handleLinkSubmit} submitButtonText={"Insert"} label={"Video Link"}/>
+            <div className={"drag-drop-container"}>
+              <DragDrop handleShowResponseAlert={showResponseAlert} onVideoUpload={handleOnVideoUpload} />
             </div>
           </div>        
           <div className={"video-player-container"}>
             <VideoJS options={videoJsOptions} onReady={handlePlayerReady} currentSubtitle={currentSubtitle} alignment={currentSubtitle.data.alignment} linePosition={getLinePositionValue(currentSubtitle)} />
           </div>
-          <TextSubmit handleInputChange={handleLinkInputChange} handleSubmit={handleLinkSubmit} submitButtonText={"Insert"} label={"Video Link"}/>
         </div>
       </div>
       <div className="player-config-row timeline-editor-engine main-row-2">
         <div className="player-config">
           <div className={"list-edit-config-container"}>
             {getSelectAllButton()}
-            <Button size={"small"} className={"edit-all-button export-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
+            <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div>
-              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={"selected-left-click selected-traverse-button clickable-icon"} icon={faCircleArrowLeft} />
-              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={"selected-right-click selected-traverse-button clickable-icon"} icon={faCircleArrowRight} />
+              <FontAwesomeIcon onClick={async () => await handleSelectedLeftClick()} className={"selected-left-click selected-traverse-button clickable-icon"} icon={faCircleArrowLeft} />
+              <FontAwesomeIcon onClick={async () => await handleSelectedRightClick()} className={"selected-right-click selected-traverse-button clickable-icon"} icon={faCircleArrowRight} />
             </div>
+            {/* <p className="autoscroll-switch-text">Autoscroll:</p>
+            <Switch className={"switch autoscroll-switch"} checked={switchState} onChange={toggleAutoScroll}/> */}
           </div>
           <div className={"autoscroll-switch-container"}>
-            <p className="autoscroll-switch-text">Autoscroll:</p>
-            <Switch className={"switch autoscroll-switch"} checked={switchState} onChange={toggleAutoScroll}/>
+            <div>
+              <TextInput handleInputChange={handleFilenameInputChange} label={"File Name"}/>
+            </div>
+            <div>
+              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
+              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateSRT()}>Export SRT</Button>
+              <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => openEditJsonModal()}>Export JSON</Button>
+            </div>
           </div>
         </div>
         <div className="player-panel" id="player-ground-1" ref={playerPanel}></div>
@@ -1193,22 +1250,24 @@ const App = () => {
         </div>
         <Timeline
           style={{width:"100%", backgroundColor: "#222222", color:"#00000"}}
-          scale={zoom}
-          scaleSplitCount={scaleSplit}
-          scaleWidth={timelineWidth}
+          scale={5}
+          scaleSplitCount={6}
+          scaleWidth={160}
           startLeft={20}
           autoScroll={true}
           ref={timelineState}
           editorData={data}
           effects={mockEffect}
           onChange={(data) => {
-            setData([...data as CusTomTimelineRow[]]);
+            const updateData = async () => {
+              setData([...data as CusTomTimelineRow[]]);
+            }
+            updateData();
             verifySubtitles();
           }}
           onActionMoveEnd={(action) => {
             let usableAction = action.action;
             verifySubtitles();
-            update(usableAction);
           }}
           onActionResizeEnd={(action) => {
             let usableAction = action.action;

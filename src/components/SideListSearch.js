@@ -3,12 +3,17 @@ import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
 import Autocomplete from '@mui/material/Autocomplete';
 import '../styles/SearchBar.css';
+import '../styles/Main.css';
+import '../styles/List.css';
+import '../styles/EditAllModal.css';
+import '../styles/TextSubmit.css';
 
 const SideListSearch = ({ searchBarWidth, dataObjects, onHandleResultClick }) => {
 
     const handleResultClick = (event, value) => {
         if (value) {
-            onHandleResultClick(value.start);
+            console.log("subtitle clicked from search result: ", value);
+            onHandleResultClick(value);
         }
     }
 
@@ -27,7 +32,7 @@ const SideListSearch = ({ searchBarWidth, dataObjects, onHandleResultClick }) =>
                         </li>
                     )}
                     onChange={handleResultClick}
-                    renderInput={(params) => <TextField {...params} label="Search subtitle..." />}
+                    renderInput={(params) => <TextField className={"submit-input"} required id="outlined-required" size={"small"} {...params} label="Search subtitle..." />}
                 />
             </Stack>
         </div>

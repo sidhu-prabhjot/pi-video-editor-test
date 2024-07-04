@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 //components
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
-import { faCirclePlus, faCodeMerge, faClone, faGear} from '@fortawesome/free-solid-svg-icons';
+import { faCirclePlus, faCodeMerge, faClone, faGear, faTrash} from '@fortawesome/free-solid-svg-icons';
 import Checkbox from '@mui/material/Checkbox';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -28,6 +27,7 @@ const ListItem = ({
     onHandleDisplayListLoader,
     measure,
     forceUpdate,
+    handleShowResponseAlert,
 }) => {
 
     const [checked, setChecked] = useState(false);
@@ -59,13 +59,23 @@ const ListItem = ({
     };
 
     const onHandleMergeClick = async () => {
-        onHandleDisplayListLoader(true);
-        await onHandleMerge(subtitleObject);
+        try {
+            onHandleDisplayListLoader(true);
+            await onHandleMerge(subtitleObject);
+            handleShowResponseAlert("successfully merged", "success");
+        } catch(error) {
+            handleShowResponseAlert("could not merge subtitles", "warning");
+        }
     };
 
     const onHandleSplitClick = async () => {
-        onHandleDisplayListLoader(true)
-        await onHandleSplit(subtitleObject);
+        try {
+            onHandleDisplayListLoader(true);
+            await onHandleSplit(subtitleObject);
+            handleShowResponseAlert("successfully split", "success");
+        } catch(error) {
+            handleShowResponseAlert("could not split subtitles", "warning");
+        }
     };
 
     const sleep = async (ms) => {
@@ -106,12 +116,20 @@ const ListItem = ({
                         }} />
                     </div>
                 </div>
-                <div onClick={async (e) => {
+                <div onClick={(e) => {
                     e.stopPropagation();
-                    onHandleDisplayListLoader(true);
-                    await deleteSubtitle(subtitleObject)
+                    try {
+                        const handleDeletion = async () => {
+                            onHandleDisplayListLoader(true);
+                            await deleteSubtitle(subtitleObject);
+                        }
+                        handleDeletion();
+                        handleShowResponseAlert("successfully deleted", "success");
+                    } catch (error) {
+                        handleShowResponseAlert("could not delete subtitle", "warning");
+                    }
                     }}>
-                    <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
+                    <FontAwesomeIcon className="clickable-icon" style={{height: "20px"}} icon={faTrash} />
                 </div>
             </div>
             <div id={`${subtitleObject.data.subtitleNumber}`} className={"list-title-container"} style={{ backgroundColor: "transparent" }}>

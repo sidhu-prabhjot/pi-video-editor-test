@@ -51,6 +51,10 @@ export const parseVTTFile = (fileData, idMap) => {
 
     console.log("parsed data: ", tree.cues);
 
+    if(tree.cues.length === 0 && fileData) {
+        throw new Error("unable to parse vtt file");
+    }
+
     idRef = 0;
 
     tree.cues.forEach((data) => {
@@ -70,6 +74,11 @@ export const parseVTTFile = (fileData, idMap) => {
         if(data.linePosition < 0) {
             let tempLine = 100 - (data.linePosition * -1);
             data.linePosition = tempLine;
+        }
+
+        //error checking
+        if(data.startTime === undefined || data.endTime === undefined) {
+            throw new Error("invalid duration");
         }
 
         let newAction = {
@@ -118,7 +127,16 @@ export const parseSRTFile = (fileData, idMap) => {
     //reset some values as a precaution
     idRef = 0;
 
+    if(parsed.length === 0 && fileData) {
+        throw new Error("unable to parse srt file");
+    }
+
     parsed.forEach((data) => {
+
+        //error checking
+        if(data.startTime === undefined || data.endTime === undefined) {
+            throw new Error("invalid duration");
+        }
 
         let newStartTime = String(data.startTime).replace(/,/g, ".");
         let startTimeArray = newStartTime.split(':'); // split it at the colons
@@ -163,7 +181,20 @@ export const parseSRTFile = (fileData, idMap) => {
 export const parseJSONFile = (fileData) => {
     console.log(JSON.parse(fileData));
 
-    return JSON.parse(fileData);
+    let parsedData = JSON.parse(fileData);
+
+    if(parsedData.data[0].actions.length === 0 && fileData) {
+        throw new Error("unable to parse json file");
+    }
+
+    parsedData.data[0].actions.forEach(action => {
+        //error checking
+        if(action.start === undefined || action.end === undefined) {
+            throw new Error("invalid duration");
+        }
+    })
+        
+    return parsedData;
 }
 
 export const generateVtt = (mockData:CusTomTimelineRow[]) => {
