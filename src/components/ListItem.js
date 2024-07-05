@@ -87,7 +87,7 @@ const ListItem = ({
     }, [subtitleObject.data.advancedEdit]);
 
     return (
-        <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ backgroundColor: subtitleObject.data.backgroundColor}} onClick={async () => {
+        <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ opacity:`${subtitleObject.data.size}`, backgroundColor: subtitleObject.data.backgroundColor}} onClick={async () => {
             currentSubtitle.data.backgroundColor = "#E5E5E5";
             const removeHighlight = async () => {
                 onHandleDisplayListLoader();

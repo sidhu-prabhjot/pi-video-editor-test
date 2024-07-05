@@ -1,5 +1,5 @@
 import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, extend } from 'lodash';
 import { useRef, useState, useEffect} from 'react';
 import { CustomRender0, CustomRender1} from './timlineComponents/custom';
 import './timelineStyles/index.less';
@@ -465,11 +465,11 @@ const App = () => {
   };
 
   // Function to sort actions by their start time
-  const sortActions = async (actions) => {
+  const sortActions = (actions) => {
     actions.sort((a, b) => a.start - b.start);
   };
 
-  const verifySubtitles = async () => {
+  const verifySubtitles = () => {
     let tempOverlapsArray = [];
     let validExport = true;
     let tempData = cloneDeep(data);
@@ -515,16 +515,11 @@ const App = () => {
     }
 
     tempData[0].actions[actions.length - 1].data.subtitleNumber = actions.length - 1; 
-
-    const updateTempData = async () => {
-      tempData[0].actions = [...actions];
-    }
   
     if (validExport) {
       console.log("sorted actions: ", actions);
       tempData[0].actions = [...actions];
       setData([...tempData]);
-      await update(currentSubtitle);
       return true;
     } else {
       console.log("invalid vtt, found overlapping subtitles");
@@ -532,7 +527,6 @@ const App = () => {
       setOverlaps([...tempOverlapsArray]);
       tempData[0].actions = [...actions];
       setData([...tempData]);
-      await update(currentSubtitle);
     }
 
     return false;
@@ -909,16 +903,53 @@ const App = () => {
 
   ////////////////////////////////////////////////////////////////////////////////// other helper functions
 
-  const update = async (action, shift=2) => {
+  const createTempActions = () => {
+      let tempActionsArray = []
+      for(let i = 0; i <= 10; i++) {
+        let newAction = {
+          id: `action_temp${i}`,
+          start: 100000+i,
+          end: 100001+i,
+          effectId: 'effect1',
+          
+          data: {
+              src: '/audio/audio.mp3',
+              name: "",
+              subtitleNumber: data[0].actions.length + i + 1,
+              alignment: "",
+              direction: "",
+              lineAlign: "",
+              linePosition: "",
+              size: 0,
+              textPosition: "",
+              toEdit: false,
+              backgroundColor: "transparent",
+              advancedEdit: false,
+          },
+      }
+      tempActionsArray.push(newAction as CustomTimelineAction);
+    }
+    return tempActionsArray;
+  }
+
+  const update = async (action, shift=5) => {
     if(data[0].actions.length < 10) {
       //if there is not room to shift, then force an update
       console.log("forcing an update");
       console.log("working with data: ", data);
-      let tempData = data;
-      await listRef.current.scrollToRow(action.data.subtitleNumber + 5);
-      await listRef.current.scrollToRow(action.data.subtitleNumber - 5);
-      await listRef.current.scrollToRow(currentSubtitle.data.subtitleNumber - 5);
-      await reassignSubtitleNumbers(tempData);
+      let tempData = cloneDeep(data);
+      let extendedData = data;
+      extendedData[0].actions.push(...createTempActions());
+      const updateThings = async () => {
+        await setData([...extendedData]);
+        if(shift + action.data.subtitleNumber < data[0].actions.length) {
+          await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
+        } else {
+          await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
+        }
+        await listRef.current.scrollToRow(action.data.subtitleNumber);
+      }
+      await updateThings();
       setData([...tempData]);
     } else {
       if(shift + action.data.subtitleNumber < data[0].actions.length) {
@@ -926,13 +957,8 @@ const App = () => {
       } else {
         await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
       }
-    }
-    
-    if(action && action.data) {
       await listRef.current.scrollToRow(action.data.subtitleNumber);
     }
-  
-    action.data.backgroundColor = "#FCA311";
   }
   
 
@@ -1151,6 +1177,7 @@ const App = () => {
           onHandleLastUpdatedByChange={handleLastUpdatedByChange}
           onHandleNoteChange={handleNoteChange}
           onHandleConfirm={generateJSON}
+          editedByValue={lastUpdatedByInput}
         />
       </div>
       <div style={{zIndex: "9999"}}>
@@ -1259,11 +1286,9 @@ const App = () => {
           editorData={data}
           effects={mockEffect}
           onChange={(data) => {
-            const updateData = async () => {
-              setData([...data as CusTomTimelineRow[]]);
-            }
-            updateData();
+            setData([...data as CusTomTimelineRow[]]);
             verifySubtitles();
+            update(currentSubtitle, 5);
           }}
           onActionMoveEnd={(action) => {
             let usableAction = action.action;
@@ -1271,7 +1296,7 @@ const App = () => {
           }}
           onActionResizeEnd={(action) => {
             let usableAction = action.action;
-            update(usableAction);
+            verifySubtitles();
           }}
           getActionRender={(action, row) => {
             if (action.effectId === 'effect0') {

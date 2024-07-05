@@ -30,6 +30,7 @@ const EditJsonModal = ({
     onHandleLastUpdatedByChange,
     onHandleNoteChange,
     onHandleConfirm,
+    editedByValue,
 }) => {
     const [displayError, setDisplayError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -46,8 +47,11 @@ const EditJsonModal = ({
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    const handleConfirmClick = () => {
-        onHandleConfirm();
+    const handleConfirmClick = async () => {
+        if(editedByValue !== "") {
+            await onHandleConfirm();
+            onCloseModal();
+        }
     }
 
     return (
