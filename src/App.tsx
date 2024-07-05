@@ -21,12 +21,13 @@ import AddSubtitleModal from './components/AddSubtitleModal';
 import EditJsonModal from './components/EditJsonModal';
 import ResponseAlert from './components/ResponseAlert';
 import InfoModal from './components/InfoModal';
+import JsonMetadataModal from './components/JsonMetadataModal';
 import {List, AutoSizer, CellMeasurer, CellMeasurerCache} from 'react-virtualized';
 import './styles/List.css';
 import './styles/Main.css';
 import './styles/Subtitle.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo} from '@fortawesome/free-solid-svg-icons';
+import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo, faFile, faFileLines} from '@fortawesome/free-solid-svg-icons';
 
 ///////////////////////////////////////////////////////////////////////////// data control
 
@@ -83,10 +84,13 @@ const App = () => {
   const [importType, setImportType] = useState("");
 
   //extra JSON file data
+  const [metaVideoSrc, setMetaVideoSrc] = useState("");
   const [metaCreatedAt, setMetaCreatedAt] = useState("");
-  const [metaUpdatedAt, setMetaUpdatedAt] = useState("");
+  const [metaUpdatedAt, setMetaUpdatedAt] = useState(null);
   const [metaLastUpdatedBy, setMetaLastUpdatedBy] = useState("");
   const [metaNote, setMetaNote] = useState("");
+  const [metaFilename, setMetaFilename] = useState("");
+  const [metaImportFileType, setMetaImportFileType] = useState("");
 
   //track IDs
   const [idMap, setIdMap] = useState({});
@@ -103,6 +107,7 @@ const App = () => {
   const [editAllModelIsOpen, setEditAllModelIsOpen] = useState(false);
   const [editJsonModalIsOpen, setEditJsonModalIsOpen] = useState(false);
   const [infoModalIsOpen, setInfoModalIsOpen] = useState(false);
+  const [jsonMetadataModalIsOpen, setJsonMetadataModalIsOpen] = useState(false);
   //const [endTime, setEndTime] = useState(null);
 
   //for add subtitle modal
@@ -648,6 +653,12 @@ const App = () => {
     }
   }
 
+  const getCurrentDate = () => {
+    let newUpdatedDate = new Date();
+    setMetaUpdatedAt(newUpdatedDate);
+    return newUpdatedDate;
+  }
+
   const generateJSON = () => {
     console.log("before generated: lastUpdateBy = ", lastUpdatedByInput, " | note = ", noteInput);
     if(verifySubtitlesForExport()) {
@@ -660,9 +671,9 @@ const App = () => {
         filename: filename,
         importFileType: importType,
         createdAt: metaCreatedAt ? metaCreatedAt : new Date(),
-        updatedAt: new Date(),
+        updatedAt: {getCurrentDate},
         lastUpdatedBy: lastUpdatedByInput ? lastUpdatedByInput : metaLastUpdatedBy,
-        note: noteInput ? noteInput : metaNote,
+        note: noteInput ? noteInput : "",
       };
       exportObject.metaData = metaDataObject;
       exportObject.data = data;
@@ -770,10 +781,13 @@ const App = () => {
         } else if (fileObject.name.includes(".json")) {
           let initialResult = parseJSONFile(reader.result);
           result = initialResult.data;
+          setMetaFilename(initialResult.metaData.filename);
+          setMetaVideoSrc(initialResult.metaData.videosrc);
           setMetaCreatedAt(initialResult.metaData.createdAt);
           setMetaUpdatedAt(initialResult.metaData.updatedAt);
           setMetaLastUpdatedBy(initialResult.metaData.lastUpdatedBy);
           setMetaNote(initialResult.metaData.note);
+          setMetaImportFileType(initialResult.metaData.importFileType);
           setImportType("json");
         }
   
@@ -899,6 +913,14 @@ const App = () => {
 
   const closeInfoModal = () => {
     setInfoModalIsOpen(false);
+  }
+
+  const openJsonMetadataModal = () => {
+    setJsonMetadataModalIsOpen(true);
+  }
+
+  const closeJsonMetadataModal = () => {
+    setJsonMetadataModalIsOpen(false);
   }
 
   ////////////////////////////////////////////////////////////////////////////////// other helper functions
@@ -1065,6 +1087,15 @@ const App = () => {
       setDisplayResponseAlert(0);
   }
 
+  const getJSONMetadataButton = () => {
+    if(importType === "json") {
+      return <FontAwesomeIcon onClick={() => openJsonMetadataModal()} className={"info-modal-button clickable-icon"} icon={faFileLines} />
+
+    }
+
+    return null;
+  }
+
   const sleep = async (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -1186,6 +1217,19 @@ const App = () => {
           onCloseModal={closeInfoModal}
         />
       </div>
+      <div style={{zIndex: "9999"}}>
+        <JsonMetadataModal
+          isOpen={jsonMetadataModalIsOpen}
+          onCloseModal={closeJsonMetadataModal}
+          videoSrc={metaVideoSrc}
+          filename={metaFilename}
+          importFileType={metaImportFileType}
+          createdAt={metaCreatedAt}
+          updatedAt={metaUpdatedAt}
+          lastUpdatedBy={metaLastUpdatedBy}
+          note={metaNote}
+        />
+      </div>
       <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
         <div className="scroll-container">
         <div>
@@ -1195,6 +1239,7 @@ const App = () => {
               <div className={"response-alert-container"} style={{opacity: displayResponseAlert}}>
                 <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity} />
               </div>
+              {getJSONMetadataButton()}
               <FontAwesomeIcon onClick={() => openInfoModal()} className={"info-modal-button clickable-icon"} icon={faCircleInfo} />
             </div>
           </div>
