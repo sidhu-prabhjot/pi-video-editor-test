@@ -1,43 +1,52 @@
 import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
-import { cloneDeep, extend } from 'lodash';
+import { cloneDeep} from 'lodash';
 import { useRef, useState, useEffect} from 'react';
 import { CustomRender0, CustomRender1} from './timlineComponents/custom';
-import './timelineStyles/index.less';
 import TimelinePlayer from './timlineComponents/player';
-import {parseVTTFile, parseSRTFile, parseJSONFile, generateVtt, generateSrt} from './processComponents/Parser';
+
 import VideoJS from './VideoJS';
 import videojs from 'video.js';
+
+import {List, AutoSizer, CellMeasurer, CellMeasurerCache} from 'react-virtualized';
+
+//videojs
+
+//fontawesome
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo, faFile, faFileLines} from '@fortawesome/free-solid-svg-icons';
+
+//material UI Components
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Switch from '@mui/material/Switch';
+import CircularProgress from '@mui/material/CircularProgress';
+
+//custom components
 import DragDrop from './components/DragDrop';
 import SideListSearch from './components/SideListSearch';
 import ListItem from './components/ListItem';
 import TextSubmit from './components/TextSubmit';
 import TextInput from './components/TextInput';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
-import CircularProgress from '@mui/material/CircularProgress';
 import EditAllModal from './components/EditAllModal';
 import AddSubtitleModal from './components/AddSubtitleModal';
 import EditJsonModal from './components/EditJsonModal';
 import ResponseAlert from './components/ResponseAlert';
 import InfoModal from './components/InfoModal';
 import JsonMetadataModal from './components/JsonMetadataModal';
-import {List, AutoSizer, CellMeasurer, CellMeasurerCache} from 'react-virtualized';
+
+import {parseVTTFile, parseSRTFile, parseJSONFile, generateVtt, generateSrt} from './processComponents/Parser';
+
+//styles
+import './timelineStyles/index.less';
 import './styles/List.css';
 import './styles/Main.css';
 import './styles/Subtitle.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo, faFile, faFileLines} from '@fortawesome/free-solid-svg-icons';
+
 
 ///////////////////////////////////////////////////////////////////////////// data control
 
-//the data structure for an entire row in the timeline
-interface CusTomTimelineRow extends TimelineRow {
-  actions: CustomTimelineAction[];
-}
-
 //defines the properties of a subtitle object in the timeline
-interface CustomTimelineAction extends TimelineAction {
+interface SubtitleData extends TimelineAction {
   data: {
     src: string;
     name: string;
@@ -54,36 +63,43 @@ interface CustomTimelineAction extends TimelineAction {
   };
 }
 
+//the data structure for an entire row in the timeline
+interface CustomTimelineRow extends TimelineRow {
+  actions: SubtitleData[];
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////// initialization
 
 //all the data that exists in a SINGLE timeline row (moved outside component to prevent multiple calls)
-const mockData: CusTomTimelineRow[] = parseVTTFile("", {});
+const mockData: CustomTimelineRow[] = parseVTTFile("", {});
 
 const App = () => {
-
-  let subtitle;
 
   //REFS:
   //the current state of the timeline and its operations (can be manipulated)
   const timelineState = useRef<TimelineState>();
   const playerPanel = useRef<HTMLDivElement>(null);
   const autoScrollWhenPlay = useRef<boolean>(true);
+
+  //video player ref
   const playerRef = useRef(null);
-  const listRef = useRef(null);
+
+  //side subtitle list ref
+  const subtitleListRef = useRef(null);
 
   
 
   //STATE MANAGEMENT:
   const [currentSubtitle, setCurrentSubtitle] = useState({data: {
     name: "",
-  }} as CustomTimelineAction);
+  }} as SubtitleData);
   const [data, setData] = useState(mockData);
   const [overlaps, setOverlaps] = useState([]);
   
   const [filename, setFilename] = useState("export file");
-  const [importType, setImportType] = useState("");
+  const [fileType, setFileType] = useState("");
 
-  //extra JSON file data
+  //json metadata
   const [metaVideoSrc, setMetaVideoSrc] = useState("");
   const [metaCreatedAt, setMetaCreatedAt] = useState("");
   const [metaUpdatedAt, setMetaUpdatedAt] = useState(null);
@@ -92,42 +108,39 @@ const App = () => {
   const [metaFilename, setMetaFilename] = useState("");
   const [metaImportFileType, setMetaImportFileType] = useState("");
 
-  //track IDs
+  //track subtitle IDs
   const [idMap, setIdMap] = useState({});
 
   //handling link inserts for the video
-  const [linkInputValue, setLinkInputValue] = useState("");
+  const [videoLink, setVideoLink] = useState("");
 
-  //list of actions that need to be edited
+  //the positioning edit values entered
   const [alignmentEdit, setAlignmentEdit] = useState(null);
   const [lineEdit, setLineEdit] = useState(-1);
 
-  //modal state management, primarily for opening and closing
+  //modal opening and closing 
   const [modalIsOpen, setIsOpen] = useState(false);
   const [editAllModelIsOpen, setEditAllModelIsOpen] = useState(false);
   const [editJsonModalIsOpen, setEditJsonModalIsOpen] = useState(false);
   const [infoModalIsOpen, setInfoModalIsOpen] = useState(false);
   const [jsonMetadataModalIsOpen, setJsonMetadataModalIsOpen] = useState(false);
-  //const [endTime, setEndTime] = useState(null);
 
-  //for add subtitle modal
+  //state management for adding subtitle modal
   const [inputValue, setInputValue] = useState("");
   const [startTimeInputValue, setStartTimeInputValue] = useState("");
   const [endTimeInputValue, setEndTimeInputValue] = useState("");
   const [lastUpdatedByInput, setLastUpdatedByInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
 
-  //button and switch toggling states
   const [switchState, setSwitchState] = useState(true);
 
-  //for switching between buttons
   const [displaySelectAll, setDisplaySelectAll] = useState(true);
 
   //loaders
   const [displayListLoader, setDisplayListLoader] = useState(false);
   const [listDisabledClass, setListDisabledClass] = useState("");
 
-  //response alert
+  //response alert state management
   const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
   const [responseAlertText, setResponseAlertText] = useState("this is some placeholder text");
   const [responseAlertSeverity, setResponseAlertSeverity] = useState("success");
@@ -144,11 +157,11 @@ const App = () => {
         enter: ({ action }) => {
 
           // update((action as CustomTimelineAction));
-          listRef.current.scrollToRow((action as CustomTimelineAction).data.subtitleNumber);
+          subtitleListRef.current.scrollToRow((action as SubtitleData).data.subtitleNumber);
 
-          (action as CustomTimelineAction).data.backgroundColor = "#FCA311";
+          (action as SubtitleData).data.backgroundColor = "#FCA311";
 
-          setCurrentSubtitle((action as CustomTimelineAction));
+          setCurrentSubtitle((action as SubtitleData));
 
           let currentSubtitleElement = document.getElementById("subtitle");
           if(currentSubtitleElement) {
@@ -162,7 +175,7 @@ const App = () => {
 
         },
         leave: ({ action }) => {
-          (action as CustomTimelineAction).data.backgroundColor = "#E5E5E5";
+          (action as SubtitleData).data.backgroundColor = "#E5E5E5";
           
           let currentSubtitleElement = document.getElementById("subtitle");
           if(currentSubtitleElement) {
@@ -263,7 +276,7 @@ const App = () => {
     }
 
 
-    const newAction : CustomTimelineAction = {   
+    const newAction : SubtitleData = {   
       id : `action${generateUniqueIdNumber()}` , 
       start : startTime,
       end : endTime, 
@@ -495,8 +508,8 @@ const App = () => {
       let next = actions[i + 1];
   
 
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+      let currentElement = document.getElementById(`${(current as SubtitleData).data.subtitleNumber}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as SubtitleData).data.subtitleNumber}-list-item-container`);
   
       if (current.end > next.start) {
         validExport = false;
@@ -605,8 +618,8 @@ const App = () => {
       let current = actions[i];
       let next = actions[i + 1];
   
-      let currentElement = document.getElementById(`${(current as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
-      let nextElement = document.getElementById(`${(next as CustomTimelineAction).data.subtitleNumber}-list-item-container`);
+      let currentElement = document.getElementById(`${(current as SubtitleData).data.subtitleNumber}-list-item-container`);
+      let nextElement = document.getElementById(`${(next as SubtitleData).data.subtitleNumber}-list-item-container`);
   
       if (current.end > next.start) {
         validExport = false;
@@ -667,9 +680,9 @@ const App = () => {
         data: [],
       };
       let metaDataObject = {
-        videoSrc:linkInputValue,
+        videoSrc: videoLink,
         filename: filename,
-        importFileType: importType,
+        importFileType: fileType,
         createdAt: metaCreatedAt ? metaCreatedAt : new Date(),
         updatedAt: {getCurrentDate},
         lastUpdatedBy: lastUpdatedByInput ? lastUpdatedByInput : metaLastUpdatedBy,
@@ -727,7 +740,7 @@ const App = () => {
   }
 
   //handles the scenario when a subtitle in the timeline is clicked
-  const handleActionClick = async (action: CustomTimelineAction) => {
+  const handleActionClick = async (action: SubtitleData) => {
     currentSubtitle.data.backgroundColor = "#E5E5E5";
 
     playerRef.current.currentTime(action.start);
@@ -747,16 +760,16 @@ const App = () => {
   const handleLinkSubmit = (event) => {
     event.preventDefault(); // Prevent the default form submission
     if (playerRef.current) {
-      console.log("Updating video source to:", linkInputValue);
-      playerRef.current.src({ src: linkInputValue, type: 'video/mp4' });
+      console.log("Updating video source to:", videoLink);
+      playerRef.current.src({ src: videoLink, type: 'video/mp4' });
       playerRef.current.load(); // Ensure the player reloads the new source
     } else {
       console.error("Player reference is not set");
     }
   };
 
-  const handleLinkInputChange = (event) => {
-    setLinkInputValue(event.target.value);
+  const handleVideoLinkChange = (event) => {
+    setVideoLink(event.target.value);
   }
 
   const handleOnVideoUpload = (fileObject) => {
@@ -774,10 +787,10 @@ const App = () => {
   
         if (fileObject.name.includes(".vtt")) {
           result = parseVTTFile(reader.result, tempIdMap);
-          setImportType("vtt");
+          setFileType("vtt");
         } else if (fileObject.name.includes(".srt")) {
           result = parseSRTFile(reader.result, tempIdMap);
-          setImportType("srt");
+          setFileType("srt");
         } else if (fileObject.name.includes(".json")) {
           let initialResult = parseJSONFile(reader.result);
           result = initialResult.data;
@@ -788,7 +801,7 @@ const App = () => {
           setMetaLastUpdatedBy(initialResult.metaData.lastUpdatedBy);
           setMetaNote(initialResult.metaData.note);
           setMetaImportFileType(initialResult.metaData.importFileType);
-          setImportType("json");
+          setFileType("json");
         }
   
         if (result === undefined) {
@@ -949,7 +962,7 @@ const App = () => {
               advancedEdit: false,
           },
       }
-      tempActionsArray.push(newAction as CustomTimelineAction);
+      tempActionsArray.push(newAction as SubtitleData);
     }
     return tempActionsArray;
   }
@@ -965,21 +978,21 @@ const App = () => {
       const updateThings = async () => {
         await setData([...extendedData]);
         if(shift + action.data.subtitleNumber < data[0].actions.length) {
-          await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
+          await subtitleListRef.current.scrollToRow(action.data.subtitleNumber + shift);
         } else {
-          await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
+          await subtitleListRef.current.scrollToRow(action.data.subtitleNumber - shift);
         }
-        await listRef.current.scrollToRow(action.data.subtitleNumber);
+        await subtitleListRef.current.scrollToRow(action.data.subtitleNumber);
       }
       await updateThings();
       setData([...tempData]);
     } else {
       if(shift + action.data.subtitleNumber < data[0].actions.length) {
-        await listRef.current.scrollToRow(action.data.subtitleNumber + shift);
+        await subtitleListRef.current.scrollToRow(action.data.subtitleNumber + shift);
       } else {
-        await listRef.current.scrollToRow(action.data.subtitleNumber - shift);
+        await subtitleListRef.current.scrollToRow(action.data.subtitleNumber - shift);
       }
-      await listRef.current.scrollToRow(action.data.subtitleNumber);
+      await subtitleListRef.current.scrollToRow(action.data.subtitleNumber);
     }
   }
   
@@ -1088,7 +1101,7 @@ const App = () => {
   }
 
   const getJSONMetadataButton = () => {
-    if(importType === "json") {
+    if(fileType === "json") {
       return <FontAwesomeIcon onClick={() => openJsonMetadataModal()} className={"info-modal-button clickable-icon"} icon={faFileLines} />
 
     }
@@ -1253,7 +1266,7 @@ const App = () => {
                 <List
                   scrollToAlignment='center'
                   className={"list-render-container"}
-                  ref={listRef}
+                  ref={subtitleListRef}
                   width={width}
                   height={height}
                   rowCount={data[0].actions.length}
@@ -1283,7 +1296,7 @@ const App = () => {
         </div>
         <div className={"video-container"}>
           <div className={"toolbar-container"}>
-            <TextSubmit handleInputChange={handleLinkInputChange} handleSubmit={handleLinkSubmit} submitButtonText={"Insert"} label={"Video Link"}/>
+            <TextSubmit handleInputChange={handleVideoLinkChange} handleSubmit={handleLinkSubmit} submitButtonText={"Insert"} label={"Video Link"}/>
             <div className={"drag-drop-container"}>
               <DragDrop handleShowResponseAlert={showResponseAlert} onVideoUpload={handleOnVideoUpload} />
             </div>
@@ -1331,7 +1344,7 @@ const App = () => {
           editorData={data}
           effects={mockEffect}
           onChange={(data) => {
-            setData([...data as CusTomTimelineRow[]]);
+            setData([...data as CustomTimelineRow[]]);
             verifySubtitles();
             update(currentSubtitle, 5);
           }}
@@ -1345,9 +1358,9 @@ const App = () => {
           }}
           getActionRender={(action, row) => {
             if (action.effectId === 'effect0') {
-              return <CustomRender0 onActionClick={handleActionClick} action={action as CustomTimelineAction} currentSubtitle={currentSubtitle} row={row as CusTomTimelineRow} />;
+              return <CustomRender0 onActionClick={handleActionClick} action={action as SubtitleData} currentSubtitle={currentSubtitle} row={row as CustomTimelineRow} />;
             } else if (action.effectId === 'effect1') {
-              return <CustomRender1 onActionClick={handleActionClick} action={action as CustomTimelineAction} currentSubtitle={currentSubtitle} row={row as CusTomTimelineRow} />;
+              return <CustomRender1 onActionClick={handleActionClick} action={action as SubtitleData} currentSubtitle={currentSubtitle} row={row as CustomTimelineRow} />;
             }
           }}
           autoReRender={true}
