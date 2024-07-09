@@ -7,8 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 
 import '../styles/Main.css';
-import '../styles/List.css';
-import '../styles/EditAllModal.css';
+import '../styles/AddSubtitleModal.css';
 
 const style = {
     position: 'absolute',
@@ -22,19 +21,34 @@ const style = {
     p: 4,
 };
 
+/**
+ * 
+ * @param {*} isOpen boolean value to indicate if modal is open or closed 
+ * @param {object} subtitleObject subtitle data object with all information of the subtitle
+ * @param {string} contentInput the string value of the content input field when set
+ * @param {string} endTimeInput the string value of the end time input field when set
+ * @param {string} startTimeInput the string value of the start time input field when set
+ * @param {array} data all subtitles data
+ * @param {function} handleCloseModal function to close the modal by setting isOpen to false
+ * @param {function} handleInsert function to insert the subtitle into the subtitle data
+ * @param {function} handleStartTimeChange function to handle updating the startTimeInput value
+ * @param {function} handleEndTimeChange function to handle updating the endTimeInput value
+ * @param {function} handleDisplayListLoader function to displat the loading spinner
+ * @returns 
+ */
 const AddSubtitleModal = ({
     isOpen,
-    onCloseModal,
-    onHandleInsert,
     subtitleObject,
-    onHandleInputChange,
-    onHandleStartInputChange,
-    onHandleEndInputChange,
-    inputValue,
-    endTime,
-    startTime,
+    contentInput,
+    endTimeInput,
+    startTimeInput,
     data,
-    onHandleDisplayListLoader,
+    handleCloseModal,
+    handleInsert,
+    handleContentInputChange,
+    handleStartTimeChange,
+    handleEndTimeChange,
+    handleDisplayListLoader,
 }) => {
     const [displayError, setDisplayError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -47,30 +61,30 @@ const AddSubtitleModal = ({
         }
     }
 
-    const sleep = async (ms) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
+    //handle confirmation of adding subtitle
     const handleConfirmClick = async () => {
         try {
-            if (!startTime) {
-                startTime = subtitleObject.end;
+            if (!startTimeInput) {
+                startTimeInput = subtitleObject.end;
             }
-            if (!endTime && data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
-                endTime = data[0].actions[subtitleObject.data.subtitleNumber + 1].start;
-            } else if(!endTime && !data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
-                endTime = subtitleObject.end + 1;
+
+            if (!endTimeInput && data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
+                //if there exists the next subtitle, then make the new subtitle's end time, the next subtitle's start time
+                endTimeInput = data[0].actions[subtitleObject.data.subtitleNumber + 1].start;
+            } else if(!endTimeInput && !data[0].actions[subtitleObject.data.subtitleNumber + 1]) {
+                //if there does not exist the next subtitle, then make the new subtitle's end time 1 second after the first
+                endTimeInput = subtitleObject.end + 1;
             }
             setErrorMsg("");
             setDisplayError(false);
-            onHandleDisplayListLoader(true);
-            await onHandleInsert(startTime, endTime, inputValue, subtitleObject);
-            onHandleDisplayListLoader(false);
+            handleDisplayListLoader(true);
+            await handleInsert(startTimeInput, endTimeInput, contentInput, subtitleObject);
+            handleDisplayListLoader(false);
         } catch (error) {
             console.log(error);
             setErrorMsg(error.message);
             setDisplayError(true);
-            onHandleDisplayListLoader(false);
+            handleDisplayListLoader(false);
         }
     }
 
@@ -78,15 +92,15 @@ const AddSubtitleModal = ({
         <div>
             <Modal
                 open={isOpen}
-                onClose={onCloseModal}
+                onClose={handleCloseModal}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
             >
                 <Box sx={style}>
-                    <div className="edit-selected-container">
+                    <div className="add-subtitle-container">
                         <div className={"modal-header-container"}>
                             <h2 className={"modal-header-heading"}>Add Subtitle: </h2>
-                            <div onClick={() => onCloseModal()}>
+                            <div onClick={() => handleCloseModal()}>
                                 <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                             </div>
                         </div>
@@ -97,7 +111,7 @@ const AddSubtitleModal = ({
                                 label="New Subtitle Text"
                                 defaultValue={""}
                                 size={"small"}
-                                onBlur={(e) => {onHandleInputChange(e)}}
+                                onBlur={(event) => {handleContentInputChange(event)}}
                             />
                         </div>
                         <div className={"modal-alignment-container vertical-alignment-container"}>
@@ -107,7 +121,7 @@ const AddSubtitleModal = ({
                                 label="Start Time"
                                 defaultValue={subtitleObject ? `${subtitleObject.end}` : ""}
                                 size={"small"}
-                                onBlur={(e) => {onHandleStartInputChange(e)}}
+                                onBlur={(event) => {handleStartTimeChange(event)}}
                             />
                         </div>
                         <div className={"modal-alignment-container vertical-alignment-container"}>
@@ -117,7 +131,7 @@ const AddSubtitleModal = ({
                                 label="End Time"
                                 defaultValue={data[0].actions[subtitleObject.data.subtitleNumber + 1] ? `${data[0].actions[subtitleObject.data.subtitleNumber + 1].start}` : subtitleObject.end + 1}
                                 size={"small"}
-                                onBlur={(e) => {onHandleEndInputChange(e)}}
+                                onBlur={(event) => {handleEndTimeChange(event)}}
                             />
                         </div>
                         {errorMessage()}

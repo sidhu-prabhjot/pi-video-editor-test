@@ -7,7 +7,9 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
-import { faCirclePlus, faCodeMerge, faClone, faGear, faTrash, faCircleArrowLeft, faCircleArrowRight} from '@fortawesome/free-solid-svg-icons';
+
+//import all data needed for info modal (includes icons)
+import '../DataExports/InfoModalData';
 
 import '../styles/Main.css';
 import '../styles/List.css';
@@ -26,7 +28,41 @@ const style = {
     padding: 2,
 };
 
-const InfoModal = ({isOpen, onCloseModal}) => {
+/**
+ * 
+ * @param {*} isOpen boolean to track if modal is open or closed
+ * @param {function} onCloseModal function that closes the modal by setting isOpen to false
+ * @param {object} info array of objects: [{icon: fontAwesome icon element, primaryText: string, secondaryText: string}]
+ * @param {string} header modal header
+ * @returns 
+ */
+const InfoModal = ({isOpen, onCloseModal, info, header}) => {
+
+    const getInfoList = () => {
+        try {
+            return info.map((infoItem, index) => {
+
+                console.log(infoItem);
+
+                //accessing the icon as an icon instead of object
+                var name = 'abc';
+                var tempObject = {};
+                tempObject[name] = infoItem.icon;
+
+                return (<ListItem key={index}>
+                    <ListItemAvatar>
+                        <Avatar>
+                            <FontAwesomeIcon className="clickable-icon" icon={tempObject[name]}/>
+                        </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary={infoItem.primaryText} secondary={infoItem.secondaryText} />
+                </ListItem>);
+            });
+        } catch (error) {
+            console.log(error);
+        } 
+
+    }
 
     return (
         <div>
@@ -39,64 +75,14 @@ const InfoModal = ({isOpen, onCloseModal}) => {
                 <Box sx={style}>
                     <div className="info-modal-container">
                         <div className={"modal-header-container"}>
-                            <h2 className={"modal-header-heading"}>Usage</h2>
+                            <h2 className={"modal-header-heading"}>{header}</h2>
                             <div onClick={() => onCloseModal()}>
                                 <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                             </div>
                         </div>
                         <div>
                             <List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
-                                <ListItem>
-                                    <ListItemAvatar>
-                                        <Avatar>
-                                            <FontAwesomeIcon className="clickable-icon" icon={faTrash} />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText primary="Delete Subtitle" secondary="Remove subtitle from the list." />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemAvatar>
-                                        <Avatar>
-                                            <FontAwesomeIcon className="clickable-icon" icon={faClone} />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText primary="Split Subtitle" secondary="Split a subtitle in half within the original subtitle's start and end time." />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemAvatar>
-                                        <Avatar>
-                                            <FontAwesomeIcon className="clickable-icon" icon={faCirclePlus} />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText primary="Insert Subtitle" secondary="Insert a subtitle directly after the subtitle that the insert button belongs to." />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemAvatar>
-                                        <Avatar>
-                                            <FontAwesomeIcon className="clickable-icon" icon={faCodeMerge} />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText primary="Merge Subtitles" secondary="Combine the subtitle to which the merge button belongs to, and the next subtitle. This will be done within the start time of the first subtitle and the end time of the second subtitle." />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemAvatar>
-                                        <Avatar>
-                                            <FontAwesomeIcon className="clickable-icon" icon={faGear} />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText primary="Advanced Edit" secondary="Opens the advanced options menu for a subtitle, which included subtitle positioning." />
-                                </ListItem>
-                                <ListItem>
-                                    <ListItemAvatar>
-                                        <Avatar>
-                                            <FontAwesomeIcon className="clickable-icon" icon={faCircleArrowLeft} />
-                                        </Avatar>                                        
-                                        <Avatar>
-                                            <FontAwesomeIcon className="clickable-icon" icon={faCircleArrowRight} />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText primary="Traverse Selected" secondary="Moves to the next selected subtitle. Left will move back/up the list and right will move forward/down." />
-                                </ListItem>
+                                {getInfoList()}
                             </List>
                         </div>
                     </div>

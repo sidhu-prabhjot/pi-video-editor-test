@@ -2,7 +2,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import '../styles/TextSubmit.css';
 
-const TextSubmit = ({handleSubmit, handleInputChange, submitButtonText,label}) => {
+const TextSubmit = ({handleSubmit, handleInputChange, submitButtonText, label, displaySubmitButton}) => {
     return (
         <div className={"text-submit-container"}>
             <TextField
@@ -13,7 +13,7 @@ const TextSubmit = ({handleSubmit, handleInputChange, submitButtonText,label}) =
             size={"small"}
             onChange={handleInputChange}
             />
-            <div className={"submit-button-container"}>
+            <div style={{display: displaySubmitButton ? "flex" : "none"}} className={"submit-button-container"}>
                 <Button className={"button insert-button"} size={"medium"} variant={"outlined"} onClick={handleSubmit}>{submitButtonText}</Button>
             </div>
         </div>

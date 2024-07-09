@@ -13,122 +13,110 @@ import '../styles/List.css';
 const ListItem = ({
     subtitleObject,
     currentSubtitle,
-    onHandleStartTimeChange,
-    onSetParentData,
-    onHandleChange,
-    onHandleEndTimeChange,
-    onHandleLinePositionChange,
-    deleteSubtitle,
+    handleStartTimeChange,
+    handleSetParentData,
+    handleContentInputChange,
+    handleEndTimeChange,
+    handleDeleteSubtitle,
     handleListClick,
-    openModal,
+    handleOpenModal,
     handleAlignmentChange,
-    onHandleMerge,
-    onHandleSplit,
-    onHandleDisplayListLoader,
-    measure,
-    forceUpdate,
+    handleLinePositionChange,
+    handleMerge,
+    handleSplit,
+    handleDisplayListLoader,
+    handleMeasure,
     handleShowResponseAlert,
+    forceUpdate,
 }) => {
 
     const [checked, setChecked] = useState(false);
     const [display, setDisplay] = useState(0);
 
-    const onClickChange = () => {
+    const onCheckboxChange = (event) => {
+        event.stopPropagation();
         subtitleObject.data.toEdit = !subtitleObject.data.toEdit;
         setChecked(subtitleObject.data.toEdit);
     };
-    
-    const onHandleInputChange = (event) => {
-        onHandleChange(event.target.value, subtitleObject);
+
+    //display loader and delete subtitle
+    const onHandleDeleteClick = async (event) => {
+        event.stopPropagation();
+        try {
+            await handleDisplayListLoader(true);
+            await handleDeleteSubtitle(subtitleObject);
+            handleShowResponseAlert("successfully deleted", "success");
+        } catch (error) {
+            handleShowResponseAlert("could not delete subtitle", "warning");
+        }
     };
 
-    const onHandleStartTimeInputChange = (event) => {
-        onHandleStartTimeChange(event.target.value, subtitleObject);
-    };
-
-    const onHandleEndTimeInputChange = (event) => {
-        onHandleEndTimeChange(event.target.value, subtitleObject);
-    };
-
-    const onHandleHorizontalAlignment = (alignment) => {
-        handleAlignmentChange(subtitleObject, alignment);
-    };
-
-    const onHandleLinePositionInputChange = (event) => {
-        onHandleLinePositionChange(event.target.value, subtitleObject);
-    };
-
+    //display loader and merge two subtitles
     const onHandleMergeClick = async () => {
         try {
-            onHandleDisplayListLoader(true);
-            await onHandleMerge(subtitleObject);
+            handleDisplayListLoader(true);
+            await handleMerge(subtitleObject);
             handleShowResponseAlert("successfully merged", "success");
         } catch(error) {
             handleShowResponseAlert("could not merge subtitles", "warning");
         }
     };
 
+    //display loader and split a subtitle
     const onHandleSplitClick = async () => {
         try {
-            onHandleDisplayListLoader(true);
-            await onHandleSplit(subtitleObject);
+            handleDisplayListLoader(true);
+            await handleSplit(subtitleObject);
             handleShowResponseAlert("successfully split", "success");
         } catch(error) {
             handleShowResponseAlert("could not split subtitles", "warning");
         }
     };
 
-    const sleep = async (ms) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    //show the advanced edit dropdown on list item
+    const onOpenAdvancedEdit = async (event) => {
+        event.stopPropagation();
+        handleListClick(subtitleObject);
+
+        const open = async () => {
+            if(subtitleObject.data.advancedEdit === false) {
+                subtitleObject.data.advancedEdit = true;
+            } else {
+                subtitleObject.data.advancedEdit = false;
+            }
+        }
+        await open();
+        await forceUpdate(subtitleObject);
+    }
+
+    const onListItemClick = async () => {
+        currentSubtitle.data.backgroundColor = "#E5E5E5";
+        await handleDisplayListLoader();
+        handleListClick(subtitleObject);
+    }
+
+    //set data when a component input loses focus
+    const onOnBlur = () => {
+        handleListClick(subtitleObject);
+        handleSetParentData();
     }
 
     useEffect(() => {
-        measure();
+        //resizing list item to accomodate the advanced edit dropdown using react virutalized method
+        handleMeasure();
     }, [subtitleObject.data.advancedEdit]);
 
     return (
-        <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ opacity:`${subtitleObject.data.size}`, backgroundColor: subtitleObject.data.backgroundColor}} onClick={async () => {
-            currentSubtitle.data.backgroundColor = "#E5E5E5";
-            const removeHighlight = async () => {
-                onHandleDisplayListLoader();
-            }
-
-            await removeHighlight();
-            handleListClick(subtitleObject)
-            }} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
+        <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ opacity:`${subtitleObject.data.size}`, backgroundColor: subtitleObject.data.backgroundColor}} onClick={() => onListItemClick()} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
             <div className="toolbar">
                 <div className="checkbox-container">
                     <p className="checkbox-text">{subtitleObject.data.subtitleNumber + 1} | Edit Select</p>
-                    <Checkbox size={"small"} className="checkbox" onChange={onClickChange} checked={subtitleObject.data.toEdit} />
+                    <Checkbox size={"small"} className="checkbox" onChange={(event) => onCheckboxChange(event)} checked={subtitleObject.data.toEdit} />
                     <div>
-                        <FontAwesomeIcon className={"open-advanced-button clickable-icon"} icon={faGear} onClick = {async (e) => {
-                            e.stopPropagation();
-
-                            const open = async () => {
-                                if(subtitleObject.data.advancedEdit === false) {
-                                    subtitleObject.data.advancedEdit = true;
-                                } else {
-                                    subtitleObject.data.advancedEdit = false;
-                                }
-                            }
-                            await open();
-                            await forceUpdate(subtitleObject);
-                        }} />
+                        <FontAwesomeIcon className={"open-advanced-button clickable-icon"} icon={faGear} onClick = {(event) => onOpenAdvancedEdit(event)} />
                     </div>
                 </div>
-                <div onClick={(e) => {
-                    e.stopPropagation();
-                    try {
-                        const handleDeletion = async () => {
-                            onHandleDisplayListLoader(true);
-                            await deleteSubtitle(subtitleObject);
-                        }
-                        handleDeletion();
-                        handleShowResponseAlert("successfully deleted", "success");
-                    } catch (error) {
-                        handleShowResponseAlert("could not delete subtitle", "warning");
-                    }
-                    }}>
+                <div onClick={(event) => onHandleDeleteClick(event)}>
                     <FontAwesomeIcon className="clickable-icon" style={{height: "20px"}} icon={faTrash} />
                 </div>
             </div>
@@ -141,9 +129,9 @@ const ListItem = ({
                         label="Start Time"
                         defaultValue={subtitleObject.start}
                         size={"small"}
-                        onChange={onHandleStartTimeInputChange}
+                        onChange={(event) => handleStartTimeChange(event.target.value, subtitleObject)}
                         onClick = {(event) => event.stopPropagation()}
-                        onBlur={onSetParentData}
+                        onBlur={() => onOnBlur()}
                     />
                 </div>
                 <div className={"title-input-container"}>
@@ -154,9 +142,9 @@ const ListItem = ({
                         label="Subtitle Text"
                         defaultValue={subtitleObject.data.name}
                         size={"small"}
-                        onChange={onHandleInputChange}
+                        onChange={(event) => handleContentInputChange(event.target.value, subtitleObject)}
                         onClick = {(event) => event.stopPropagation()}
-                        onBlur={onSetParentData}
+                        onBlur={() => onOnBlur()}
                     />
                 </div>
                 <div className={"time-input-container end-input-container"}>
@@ -167,9 +155,9 @@ const ListItem = ({
                         label="End Time"
                         defaultValue={subtitleObject.end}
                         size={"small"}
-                        onChange={onHandleEndTimeInputChange}
+                        onChange={(event) => handleEndTimeChange(event.target.value, subtitleObject)}
                         onClick = {(event) => event.stopPropagation()}
-                        onBlur={onSetParentData}
+                        onBlur={() => onOnBlur()}
                     />
                 </div>
             </div>
@@ -179,19 +167,19 @@ const ListItem = ({
                     <div className={"alignment-button-container"}>
                         <Button size={"small"} variant={subtitleObject.data.alignment === "left" ? "contained" : "outlined"} onClick={(e) => {
                             e.stopPropagation();
-                            onHandleHorizontalAlignment("left")
+                            handleAlignmentChange(subtitleObject, "left");
                         }}>Left</Button>
                     </div>
                     <div className={"alignment-button-container"}>
                         <Button size={"small"} variant={subtitleObject.data.alignment === "center" ? "contained" : "outlined"} onClick={(e) => {
                             e.stopPropagation();
-                            onHandleHorizontalAlignment("center")
+                            handleAlignmentChange(subtitleObject, "center");
                         }}>Center</Button>
                     </div>
                     <div className={"alignment-button-container"}>
                         <Button size={"small"} variant={subtitleObject.data.alignment === "right" ? "contained" : "outlined"} onClick={(e) => {
                             e.stopPropagation();
-                            onHandleHorizontalAlignment("right")
+                            handleAlignmentChange(subtitleObject, "right");
                         }}>Right</Button>
                     </div>
                 </div>
@@ -202,9 +190,9 @@ const ListItem = ({
                         label="Vertical"
                         defaultValue={subtitleObject.data.linePosition}
                         size={"small"}
-                        onChange={onHandleLinePositionInputChange}
+                        onChange={(event) => handleLinePositionChange(event.target.value, subtitleObject)}
                         onClick = {(event) => event.stopPropagation()}
-                        onBlur={onSetParentData}
+                        onBlur={() => onOnBlur()}
                     />
                 </div>
             </div>
@@ -213,11 +201,11 @@ const ListItem = ({
                 onMouseEnter={() => setDisplay(100)}
                 onMouseLeave={() => setDisplay(0)}
             >
-                <FontAwesomeIcon onClick={() => onHandleSplitClick()} style={{ opacity: display, transition: "opacity 0.2s" }} className={"first-merge-button merge-subtitle-button clickable-icon"} icon={faClone} />
-                <div onClick={() => openModal(subtitleObject.end)}>
-                    <FontAwesomeIcon style={{ opacity: display, transition: "opacity 0.2s"  }} className={"add-subtitle-button clickable-icon"} icon={faCirclePlus} />
+                <FontAwesomeIcon onClick={() => onHandleSplitClick()} style={{ opacity: display,}} className={"first-merge-button merge-subtitle-button clickable-icon list-item-action-button"} icon={faClone} />
+                <div onClick={() => handleOpenModal(subtitleObject.end)}>
+                    <FontAwesomeIcon style={{ opacity: display}} className={"add-subtitle-button clickable-icon list-item-action-button"} icon={faCirclePlus} />
                 </div>
-                <FontAwesomeIcon onClick={() => onHandleMergeClick()} style={{ opacity: display, transition: "opacity 0.2s"  }} className={"second-merge-button merge-subtitle-button clickable-icon"} icon={faCodeMerge} />
+                <FontAwesomeIcon onClick={() => onHandleMergeClick()} style={{ opacity: display}} className={"second-merge-button merge-subtitle-button clickable-icon list-item-action-button"} icon={faCodeMerge} />
             </div>
         </div>
     );

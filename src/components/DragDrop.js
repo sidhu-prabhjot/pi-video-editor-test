@@ -4,12 +4,18 @@ import '../styles/DragDrop.css';
 
 const fileTypes = ["VTT", "SRT", "JSON"];
 
-function DragDrop({handleShowResponseAlert, onVideoUpload}) {
+/**
+ * 
+ * @param {*} handleShowResponseAlert function to display alert
+ * @param {function} handleVideoUpload function to process file when uploaded successfully
+ * @returns 
+ */
+function DragDrop({handleShowResponseAlert, handleVideoUpload}) {
 
   return (
       <FileUploader className={"file-drop"} handleChange={(file) => {
         try {
-          onVideoUpload(file);
+          handleVideoUpload(file);
           handleShowResponseAlert("file contents loaded successfully", "success");
         } catch (error) {
           handleShowResponseAlert("unable to load contents of file", "error")
