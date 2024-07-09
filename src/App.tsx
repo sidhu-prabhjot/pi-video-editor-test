@@ -19,7 +19,6 @@ import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo, faFile, faFileLine
 //material UI Components
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
 
 //custom components
@@ -159,10 +158,10 @@ const App = () => {
       source: {
         enter: ({ action }) => {
 
-          // update((action as CustomTimelineAction));
-          subtitleListRef.current.scrollToRow((action as SubtitleData).data.subtitleNumber);
+          let subtitleObject = action as SubtitleData;
+          subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
 
-          (action as SubtitleData).data.backgroundColor = "#FCA311";
+          subtitleObject.data.backgroundColor = "#FCA311";
 
           setCurrentSubtitle((action as SubtitleData));
 
@@ -178,7 +177,9 @@ const App = () => {
 
         },
         leave: ({ action }) => {
-          (action as SubtitleData).data.backgroundColor = "#E5E5E5";
+          let subtitleObject = action as SubtitleData;
+
+          subtitleObject.data.backgroundColor = "#E5E5E5";
           
           let currentSubtitleElement = document.getElementById("subtitle");
           if(currentSubtitleElement) {
@@ -756,15 +757,6 @@ const App = () => {
     await update(subtitleObject, 5);
   }
 
-  //TEMPORARY
-  const toggleAutoScroll = () => {
-    if(switchState) {
-      setSwitchState(false);
-    } else {
-      setSwitchState(true);
-    }
-  }
-
   // Function to handle submission of video link
   const onVideoLinkSubmit = (event) => {
     event.preventDefault(); // Prevent the default form submission
@@ -1143,16 +1135,6 @@ const App = () => {
     setDisplayListLoader(false);
   }, [data])
 
-
-  useEffect(() => {
-    if(switchState) {
-      autoScrollWhenPlay.current = true;
-    } else {
-      autoScrollWhenPlay.current = false;
-    }
-
-  }, [switchState])
-
   //display a prompt confirming reload
   useEffect(() => {
       // Prompt confirmation when reload page is triggered
@@ -1214,10 +1196,10 @@ const App = () => {
     <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
       <EditAllModal
         isOpen={editAllModelIsOpen}
-        onCloseModal={closeEditAllModal}
+        handleCloseModal={closeEditAllModal}
         handleEditAllAlignmentChange={onEditAllAlignmentChange}
-        editAllSelected={editAllSelected}
-        handleYAlignChange={onEditAllLinePositionChange}
+        handleEditAllSelected={editAllSelected}
+        handleEditAllLinePositionChange={onEditAllLinePositionChange}
         setParentData={onSetParentData}
       />
       <div style={{zIndex: "9999"}}>
@@ -1239,13 +1221,13 @@ const App = () => {
       <div style={{zIndex: "9999"}}>
         <EditJsonModal
           isOpen={editJsonModalIsOpen}
-          onCloseModal={closeEditJsonModal}
           lastUpdatedBy={metaLastUpdatedBy}
+          lastUpdatedByInput={lastUpdatedBy}
           note={metaNote}
-          onHandleLastUpdatedByChange={onLastUpdatedByChange}
-          onHandleNoteChange={onNoteChange}
-          onHandleConfirm={generateJSON}
-          editedByValue={lastUpdatedBy}
+          handleCloseModal={closeEditJsonModal}
+          handleLastUpdatedByChange={onLastUpdatedByChange}
+          handleNoteChange={onNoteChange}
+          handleConfirm={generateJSON}
         />
       </div>
       <div style={{zIndex: "9999"}}>
@@ -1336,8 +1318,6 @@ const App = () => {
               <FontAwesomeIcon onClick={async () => await handleSelectedLeftClick()} className={"selected-left-click selected-traverse-button clickable-icon"} icon={faCircleArrowLeft} />
               <FontAwesomeIcon onClick={async () => await handleSelectedRightClick()} className={"selected-right-click selected-traverse-button clickable-icon"} icon={faCircleArrowRight} />
             </div>
-            {/* <p className="autoscroll-switch-text">Autoscroll:</p>
-            <Switch className={"switch autoscroll-switch"} checked={switchState} onChange={toggleAutoScroll}/> */}
           </div>
           <div className={"autoscroll-switch-container"}>
             <div>

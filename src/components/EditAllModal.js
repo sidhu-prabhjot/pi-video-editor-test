@@ -24,12 +24,22 @@ const style = {
     padding: 2,
   };
 
+  /**
+   * 
+   * @param {*} isOpen boolean that indicates if modal is open or closed 
+   * @param {function} handleCloseModal function that will close the modal
+   * @param {function} handleEditAllAlignmentChange function to handle change to the select horizontal alignment
+   * @param {function} handleEditAllLinePositionChange function handle change to the vertical alignment input
+   * @param {function} handleEditAllSelected function to apply the vertical and horizontal alignment to all selected subtitles
+   * @param {function} setParentData function to apply edits to the subtitle data set
+   * @returns 
+   */
 const EditAllModal = ({
     isOpen,
-    onCloseModal,
+    handleCloseModal,
     handleEditAllAlignmentChange,
-    editAllSelected,
-    handleYAlignChange, 
+    handleEditAllSelected,
+    handleEditAllLinePositionChange, 
     setParentData}) => {
 
     const [variantLeft, setVariantLeft] = useState("outlined");
@@ -37,6 +47,7 @@ const EditAllModal = ({
     const [variantRight, setVariantRight] = useState("outlined");
     const [removeAll, setRemoveAll] = useState(false);
 
+    //change the selected horizontal button to the selected type, and the rest to the unselected type
     const onHandleHorizontalAlignment = (alignment, elementId) => {
         const textContent = alignment;
         if(textContent === "left") {
@@ -56,13 +67,9 @@ const EditAllModal = ({
         setParentData();
     }
 
-    const handleInputChange = (event) => {
-        handleYAlignChange(event.target.value);
-    }
-
     const confirmEdit = async () => {
-        await editAllSelected(removeAll);
-        onCloseModal();
+        await handleEditAllSelected(removeAll);
+        handleCloseModal();
     }
 
     const onCheckboxChange = () => {
@@ -77,7 +84,7 @@ const EditAllModal = ({
 
         <Modal
             open={isOpen}
-            onClose={onCloseModal}
+            onClose={handleCloseModal}
             aria-labelledby="modal-modal-title"
             aria-describedby="modal-modal-description"
         >
@@ -85,7 +92,7 @@ const EditAllModal = ({
                 <div className="edit-selected-container">
                     <div className={"modal-header-container"}>
                         <h2 className={"modal-header-heading"}>Edit Selected: </h2>
-                        <div onClick={() => onCloseModal()}>
+                        <div onClick={() => handleCloseModal()}>
                             <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                         </div>
                     </div>
@@ -103,7 +110,7 @@ const EditAllModal = ({
                             label="Vertical"
                             defaultValue={100}
                             size={"small"}
-                            onBlur={(e) => {handleInputChange(e)}}
+                            onBlur={(event) => handleEditAllLinePositionChange(event.target.value)}
                             />
                         </div>
                     </div>

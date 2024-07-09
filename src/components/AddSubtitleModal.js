@@ -33,7 +33,7 @@ const style = {
  * @param {function} handleInsert function to insert the subtitle into the subtitle data
  * @param {function} handleStartTimeChange function to handle updating the startTimeInput value
  * @param {function} handleEndTimeChange function to handle updating the endTimeInput value
- * @param {function} handleDisplayListLoader function to displat the loading spinner
+ * @param {function} handleDisplayListLoader function to display the loading spinner
  * @returns 
  */
 const AddSubtitleModal = ({

@@ -22,15 +22,27 @@ const style = {
     p: 4,
 };
 
+/**
+ * 
+ * @param {*} isOpen boolean that will indicate if the modal is open or closed
+ * @param {*} lastUpdateBy string value of the lastUpdatedBy field extracted from JSON metadata
+ * @param {*} lastUpdateByInput string value of the last updated by input after it has been set
+ * @param {*} note string value of the note field extracted from JSON metadata
+ * @param {function} handleCloseModal function that will close the modal
+ * @param {function} handleLastUpdatedByChange function that will update the lastUpdateByInput value
+ * @param {function} handleNoteChange function that will update the note input
+ * @param {function} handleConfirm function that will submit the data and call for JSON export with udpated data
+ * @returns 
+ */
 const EditJsonModal = ({
     isOpen,
-    onCloseModal,
     lastUpdatedBy,
+    lastUpdatedByInput,
     note,
-    onHandleLastUpdatedByChange,
-    onHandleNoteChange,
-    onHandleConfirm,
-    editedByValue,
+    handleCloseModal,
+    handleLastUpdatedByChange,
+    handleNoteChange,
+    handleConfirm,
 }) => {
     const [displayError, setDisplayError] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -42,15 +54,11 @@ const EditJsonModal = ({
             return null;
         }
     }
-
-    const sleep = async (ms) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
+    
     const handleConfirmClick = async () => {
-        if(editedByValue !== "") {
-            await onHandleConfirm();
-            onCloseModal();
+        if(lastUpdatedByInput !== "") {
+            await handleConfirm();
+            handleCloseModal();
         }
     }
 
@@ -58,7 +66,7 @@ const EditJsonModal = ({
         <div>
             <Modal
                 open={isOpen}
-                onClose={onCloseModal}
+                onClose={handleCloseModal}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
             >
@@ -66,7 +74,7 @@ const EditJsonModal = ({
                     <div className="edit-selected-container">
                         <div className={"modal-header-container"}>
                             <h2 className={"modal-header-heading"}>Update JSON Metadata: </h2>
-                            <div onClick={() => onCloseModal()}>
+                            <div onClick={() => handleCloseModal()}>
                                 <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                             </div>
                         </div>
@@ -77,7 +85,7 @@ const EditJsonModal = ({
                                 label="Last Updated By"
                                 size={"small"}
                                 defaultValue={lastUpdatedBy}
-                                onBlur={(e) => onHandleLastUpdatedByChange(e)}
+                                onBlur={(event) => handleLastUpdatedByChange(event)}
                             />
                         </div>
                         <div className={"modal-alignment-container vertical-alignment-container"}>
@@ -87,7 +95,7 @@ const EditJsonModal = ({
                                 label="Note"
                                 size={"small"}
                                 defaultValue={note}
-                                onBlur={(e) => onHandleNoteChange(e)}
+                                onBlur={(event) => handleNoteChange(event)}
                             />
                         </div>
                         {errorMessage()}
