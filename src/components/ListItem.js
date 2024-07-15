@@ -43,7 +43,6 @@ const ListItem = ({
     const onHandleDeleteClick = async (event) => {
         event.stopPropagation();
         try {
-            await handleDisplayListLoader(true);
             await handleDeleteSubtitle(subtitleObject);
             handleShowResponseAlert("successfully deleted", "success");
         } catch (error) {

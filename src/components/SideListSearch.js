@@ -8,12 +8,19 @@ import '../styles/List.css';
 import '../styles/EditAllModal.css';
 import '../styles/TextSubmit.css';
 
-const SideListSearch = ({ searchBarWidth, dataObjects, onHandleResultClick }) => {
+/**
+ * 
+ * @param {integer} searchBarWidth integer value representing the width of the search bar in pixels
+ * @param {array} dataObjects an array of data set's subtitleData objects 
+ * @param {function} handleResultClick a function to run once a search result is clicked
+ * @returns 
+ */
+const SideListSearch = ({ searchBarWidth, dataObjects, handleResultClick }) => {
 
-    const handleResultClick = (event, value) => {
+    const onResultClick = (event, value) => {
         if (value) {
             console.log("subtitle clicked from search result: ", value);
-            onHandleResultClick(value);
+            handleResultClick(value);
         }
     }
 
@@ -31,7 +38,7 @@ const SideListSearch = ({ searchBarWidth, dataObjects, onHandleResultClick }) =>
                             {option.data.name}
                         </li>
                     )}
-                    onChange={handleResultClick}
+                    onChange={onResultClick}
                     renderInput={(params) => <TextField className={"submit-input"} required id="outlined-required" size={"small"} {...params} label="Search subtitle..." />}
                 />
             </Stack>
