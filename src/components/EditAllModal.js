@@ -1,9 +1,16 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
+
+//custom components
+import ResponseAlert from './ResponseAlert';
+
+//material ui
 import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
 import Modal from '@mui/material/Modal';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+
+//fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 
@@ -45,7 +52,16 @@ const EditAllModal = ({
     const [variantLeft, setVariantLeft] = useState("outlined");
     const [variantMiddle, setVariantMiddle] = useState("outlined");
     const [variantRight, setVariantRight] = useState("outlined");
+    const [responseAlertText, setResponseAlertText] = useState("");
+    const [responseAlertSeverity, setResponseAlertSeverity] = useState("success");
+    const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
     const [removeAll, setRemoveAll] = useState(false);
+
+    //makes sure that the error message is hidden before closing the modal
+    const closeModal = () => {
+        setDisplayResponseAlert(0);
+        handleCloseModal();
+    }
 
     //change the selected horizontal button to the selected type, and the rest to the unselected type
     const onHandleHorizontalAlignment = (alignment, elementId) => {
@@ -68,8 +84,12 @@ const EditAllModal = ({
     }
 
     const confirmEdit = async () => {
-        await handleEditAllSelected(removeAll);
-        handleCloseModal();
+        try {
+            await handleEditAllSelected(removeAll);
+            closeModal();
+        } catch (error) {
+            showResponseAlert(error.message, "warning");
+        }
     }
 
     const onCheckboxChange = () => {
@@ -78,6 +98,13 @@ const EditAllModal = ({
         } else {
             setRemoveAll(true);
         }
+    }
+    
+    //unique to this component, and will only effect this component's alert
+    const showResponseAlert = async (responseText, severity) => {
+        setResponseAlertText(responseText);
+        setResponseAlertSeverity(severity);
+        setDisplayResponseAlert(100);
     }
 
     return (
@@ -92,7 +119,7 @@ const EditAllModal = ({
                 <div className="edit-selected-container">
                     <div className={"modal-header-container"}>
                         <h2 className={"modal-header-heading"}>Edit Selected: </h2>
-                        <div onClick={() => handleCloseModal()}>
+                        <div onClick={() => closeModal()}>
                             <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                         </div>
                     </div>
@@ -117,6 +144,9 @@ const EditAllModal = ({
                     <div className={"modal-remove-all-container checkbox-container"}>
                         <p className="checkbox-text">Clear Edit List</p>
                         <Checkbox size={"small"} className="checkbox" onChange={onCheckboxChange} checked={removeAll}/>
+                    </div>
+                    <div className={"response-alert-container"} style={{opacity: displayResponseAlert, display: displayResponseAlert === 0 ? "none" : "flex"}}>
+                        <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity}/>
                     </div>
                     <Button size={"medium"} variant={"contained"} onClick={() => {confirmEdit()}}>Confirm</Button>
                 </div>

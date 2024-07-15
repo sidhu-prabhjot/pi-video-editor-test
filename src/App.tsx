@@ -17,9 +17,11 @@ import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo, faFile, faFileLine
 
 
 //material UI Components
+import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import Switch from '@mui/material/Switch';
 
 //custom components
 import DragDrop from './components/DragDrop';
@@ -43,9 +45,57 @@ import './styles/List.css';
 import './styles/Main.css';
 import './styles/Main_dark.css';
 import './styles/Subtitle.css';
+import { StarTwoTone } from '@ant-design/icons';
 
 
 ///////////////////////////////////////////////////////////////////////////// data control
+
+const MaterialUISwitch = styled(Switch)(({ theme }) => ({
+  width: 62,
+  height: 34,
+  padding: 7,
+  '& .MuiSwitch-switchBase': {
+    margin: 1,
+    padding: 0,
+    transform: 'translateX(6px)',
+    '&.Mui-checked': {
+      color: '#fff',
+      transform: 'translateX(22px)',
+      '& .MuiSwitch-thumb:before': {
+        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="${encodeURIComponent(
+          '#fff',
+        )}" d="M4.2 2.5l-.7 1.8-1.8.7 1.8.7.7 1.8.6-1.8L6.7 5l-1.9-.7-.6-1.8zm15 8.3a6.7 6.7 0 11-6.6-6.6 5.8 5.8 0 006.6 6.6z"/></svg>')`,
+      },
+      '& + .MuiSwitch-track': {
+        opacity: 1,
+        backgroundColor: theme.palette.mode === 'dark' ? '#8796A5' : '#aab4be',
+      },
+    },
+  },
+  '& .MuiSwitch-thumb': {
+    backgroundColor: theme.palette.mode === 'dark' ? '#003892' : '#001e3c',
+    width: 32,
+    height: 32,
+    '&::before': {
+      content: "''",
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+      left: 0,
+      top: 0,
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'center',
+      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="${encodeURIComponent(
+        '#fff',
+      )}" d="M9.305 1.667V3.75h1.389V1.667h-1.39zm-4.707 1.95l-.982.982L5.09 6.072l.982-.982-1.473-1.473zm10.802 0L13.927 5.09l.982.982 1.473-1.473-.982-.982zM10 5.139a4.872 4.872 0 00-4.862 4.86A4.872 4.872 0 0010 14.862 4.872 4.872 0 0014.86 10 4.872 4.872 0 0010 5.139zm0 1.389A3.462 3.462 0 0113.471 10a3.462 3.462 0 01-3.473 3.472A3.462 3.462 0 016.527 10 3.462 3.462 0 0110 6.528zM1.665 9.305v1.39h2.083v-1.39H1.666zm14.583 0v1.39h2.084v-1.39h-2.084zM5.09 13.928L3.616 15.4l.982.982 1.473-1.473-.982-.982zm9.82 0l-.982.982 1.473 1.473.982-.982-1.473-1.473zM9.305 16.25v2.083h1.389V16.25h-1.39z"/></svg>')`,
+    },
+  },
+  '& .MuiSwitch-track': {
+    opacity: 1,
+    backgroundColor: theme.palette.mode === 'dark' ? '#8796A5' : '#aab4be',
+    borderRadius: 20 / 2,
+  },
+}));
 
 //defines the properties of a subtitle object in the timeline
 interface SubtitleObject extends TimelineAction {
@@ -246,15 +296,6 @@ const App = () => {
     return subtitleNumber;
   };
   
-  // Separate function to clear background colors
-  const clearBackgroundColors = () => {
-    let updatedData = cloneDeep(data);
-    updatedData[0].actions.forEach(subtitleObject => {
-      subtitleObject.data.backgroundColor = "#E5E5E5";
-    });
-    setData(updatedData);
-  };
-  
   
   // Function for inserting a subtitle into the dataset
   const insertSubtitle = async (startTime, endTime, content, currentSubtitle) => {
@@ -265,6 +306,14 @@ const App = () => {
 
     if (content === "") {
       content = "no text";
+    }
+
+    if(endTime < 0 || startTime < 0) {
+      throw new Error("cannot have negative time!")
+    }
+
+    if(endTime < startTime) {
+      throw new Error("start time cannot occur after end time!")
     }
 
     // Error handling for overlapping subtitles and zero duration
@@ -304,21 +353,18 @@ const App = () => {
     };
 
     // Inserting the new subtitle into the dataset
-    let tempArray = cloneDeep(data);  // Clone the data to avoid direct mutations
+    let tempArray = data;  // Clone the data to avoid direct mutations
     tempArray[0].actions.splice(currentSubtitle.data.subtitleNumber + 1, 0, newSubtitle);
 
     // Reassign subtitle numbers and update the state
     await reassignSubtitleNumbers(tempArray);
     console.log("Temp array before setting data: ", tempArray);
-    setData(tempArray);
+    setData([...tempArray]);
     await update(currentSubtitle, 5);
-
-    closeAddSubtitleModal();
     await setTime(currentSubtitle);
 
     showResponseAlert("Successfully inserted", "success");
   };
-
 
 
   const updateData = async (tempArray) => {
@@ -417,13 +463,14 @@ const App = () => {
       data: {
         ...subtitleObject.data,
         subtitleNumber: subtitleObject.data.subtitleNumber + 1,
+        backgroundColor: "#E5E5E5",
         toEdit: false,
         advancedEdit: false,
       }
     };
   
     // Clone the existing data array
-    let tempData = [...data];
+    let tempData = data;
     let actions = [...tempData[0].actions];
   
     // Update the end time of the current subtitle to the midpoint
@@ -439,7 +486,7 @@ const App = () => {
     await reassignSubtitleNumbers(tempData);
     
     // Update state and other necessary operations
-    setData(tempData);
+    setData([...tempData]);
     await update(subtitleObject, 5);
     await setTime(subtitleObject);
   
@@ -552,10 +599,18 @@ const App = () => {
       if (subtitleObject.data.toEdit) {
         if (alignmentEdit !== null) {
           subtitleObject.data.alignment = alignmentEdit;
+        } else {
+          throw new Error("invalid horizontal positioning!")
         }
 
-        if (lineEdit !== -1) {
+        //the received line position must be a positive number between 0 and 100, or it must be the string "auto" 
+        if ((Number(lineEdit) && Number(lineEdit) > 0 && Number(lineEdit) < 101) || (typeof lineEdit === "string" && lineEdit === "auto")) {
+          if (typeof lineEdit === "string" && lineEdit === "auto") {
+            setLineEdit(100);
+          }
           subtitleObject.data.linePosition = lineEdit.toString();
+        } else {
+          throw new Error("invalid vertical positioning!")
         }
 
         //if removeAll is true, then remove each subtitle from edit list
@@ -566,7 +621,7 @@ const App = () => {
     });
 
     setData([...tempData]);
-    setDisplaySelectAll(true); //change the unselectall button to select all
+    if(removeAll) setDisplaySelectAll(true); //change the unselectall button to select all
   };
 
   ////////////////////////////////////////////////////////////////////// exporting subtitles
@@ -631,7 +686,12 @@ const App = () => {
     }
   }
 
-  const generateJSON = () => {
+  const generateJSON = (lastUpdatedByInput) => {
+
+    if(lastUpdatedByInput == null) {
+      throw new Error("'last upated by' field is required!")
+    }
+
     console.log("before generated: lastUpdateBy = ", lastUpdatedBy, " | note = ", note);
     if(verifySubtitlesForExport()) {
       let exportObject = {
@@ -643,9 +703,9 @@ const App = () => {
         filename: filename,
         importFileType: fileType,
         createdAt: metaCreatedAt ? metaCreatedAt : new Date(),
-        updatedAt: {getNewUpdatedDate},
+        updatedAt: getNewUpdatedDate(),
         lastUpdatedBy: lastUpdatedBy ? lastUpdatedBy : metaLastUpdatedBy,
-        note: note ? note : "",
+        note: note ? note : metaNote,
       };
       exportObject.metaData = metaDataObject;
       exportObject.data = data;
@@ -694,7 +754,7 @@ const App = () => {
   //move to the clicked subtitle on the side list
   const onSubtitleListClick = async (subtitleObject) => {
 
-    currentSubtitle.data.backgroundColor = "#E5E5E5";
+    currentSubtitle.data.backgroundColor = darkModeClassAppend ? "#003D5C" : "#E5E5E5";
 
     console.log("clicked subtitle: ", subtitleObject.data.subtitleNumber);
     playerRef.current.currentTime(subtitleObject.start);
@@ -707,7 +767,7 @@ const App = () => {
 
   //handles the scenario when a subtitle in the timeline is clicked
   const onTimelineSubtitleClick = async (subtitleObject: SubtitleObject) => {
-    currentSubtitle.data.backgroundColor = "#E5E5E5";
+    currentSubtitle.data.backgroundColor = darkModeClassAppend ? "#003D5C" : "#E5E5E5";
 
     playerRef.current.currentTime(subtitleObject.start);
     reassignSubtitleNumbers(data);
@@ -755,6 +815,7 @@ const App = () => {
         } else if (fileObject.name.includes(".json")) {
           let initialResult = parseJSONFile(reader.result);
           result = initialResult.data;
+          setFilename(initialResult.metaData.filename);
           // Set meta data
           setMetaFilename(initialResult.metaData.filename);
           setMetaVideoSrc(initialResult.metaData.videosrc);
@@ -936,20 +997,24 @@ const App = () => {
       //if there is not room to shift, then force an update
       console.log("forcing an update");
       console.log("working with data: ", data);
-      let tempData = cloneDeep(data);
-      let extendedData = data;
+      let tempData = data;
+      let extendedData = cloneDeep(data);
+      let keptSubtitleNumber = subtitleObject.data.subtitleNumber;
       extendedData[0].actions.push(...createTempActions());
       const updateThings = async () => {
         setData([...extendedData]);
         if(shift + subtitleObject.data.subtitleNumber < data[0].actions.length) {
           await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber + shift);
+          await subtitleListRef.current.scrollToRow(keptSubtitleNumber);
         } else {
           await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber - shift);
+          await subtitleListRef.current.scrollToRow(keptSubtitleNumber);
         }
-        await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
+        setData([...tempData]);
       }
       await updateThings();
-      setData([...tempData]);
+      await subtitleListRef.current.scrollToRow(keptSubtitleNumber);
+
     } else {
       if(shift + subtitleObject.data.subtitleNumber < data[0].actions.length) {
         await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber + shift);
@@ -1092,6 +1157,14 @@ const App = () => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  const toggleDarkMode = () => {
+    if(darkModeClassAppend === "-dark") {
+      setDarkModeClassAppend("");
+    } else {
+      setDarkModeClassAppend("-dark");
+    }
+  }
+
   //////////////////////////////////////////////////////////////////////////// React hooks utilization
 
   useEffect(() => {
@@ -1133,6 +1206,7 @@ const App = () => {
         {({measure, registerChild}) => (
           <div ref={registerChild} style={style}>
             <ListItem 
+              darkMode={darkModeClassAppend}
               handleMeasure={measure}
               subtitleObject={data[0].actions[index]} 
               currentSubtitle={currentSubtitle}
@@ -1189,6 +1263,7 @@ const App = () => {
           lastUpdatedBy={metaLastUpdatedBy}
           lastUpdatedByInput={lastUpdatedBy}
           note={metaNote}
+          noteInput={note}
           handleCloseModal={closeEditJsonModal}
           handleLastUpdatedByChange={onLastUpdatedByChange}
           handleNoteChange={onNoteChange}
@@ -1222,6 +1297,7 @@ const App = () => {
               </div>
               {getJSONMetadataButton()}
               <FontAwesomeIcon onClick={() => openInfoModal()} className={"info-modal-button clickable-icon"} icon={faCircleInfo} />
+              <MaterialUISwitch sx={{ m: 1 }} defaultChecked onChange={() => toggleDarkMode()}/>
             </div>
           </div>
         </div>
@@ -1264,7 +1340,7 @@ const App = () => {
         </div>
         <div className={`video-container${darkModeClassAppend}`}>
           <div className={"toolbar-container"}>
-            <TextSubmit handleInputChange={onVideoLinkChange} handleSubmit={onVideoLinkSubmit} submitButtonText={"Insert"} label={"Video Link"} displaySubmitButton={true}/>
+            <TextSubmit handleInputChange={onVideoLinkChange} handleSubmit={onVideoLinkSubmit} submitButtonText={"Insert"} label={"Video Link"} displaySubmitButton={true} defaultValue={""}/>
             <div className={"drag-drop-container"}>
               <DragDrop handleShowResponseAlert={showResponseAlert} handleVideoUpload={onSubtitleFileUpload} />
             </div>
@@ -1286,7 +1362,7 @@ const App = () => {
           </div>
           <div className={"autoscroll-switch-container"}>
             <div>
-              <TextSubmit handleInputChange={onFilenameInputChange} handleSubmit={() => {}} submitButtonText={""} label={"File Name"} displaySubmitButton={false}/>
+              <TextSubmit handleInputChange={onFilenameInputChange} handleSubmit={() => {}} submitButtonText={""} label={"File Name"} displaySubmitButton={false} defaultValue={metaFilename}/>
             </div>
             <div>
               <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>

@@ -1,8 +1,15 @@
 import { useState } from 'react';
+
+//custom components
+import ResponseAlert from './ResponseAlert';
+
+//material ui
 import Box from '@mui/material/Box';
 import Modal from '@mui/material/Modal';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+
+//fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 
@@ -50,15 +57,21 @@ const AddSubtitleModal = ({
     handleEndTimeChange,
     handleDisplayListLoader,
 }) => {
-    const [displayError, setDisplayError] = useState(false);
-    const [errorMsg, setErrorMsg] = useState("");
+    const [responseAlertText, setResponseAlertText] = useState("");
+    const [responseAlertSeverity, setResponseAlertSeverity] = useState("warning");
+    const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
 
-    const errorMessage = () => {
-        if (displayError) {
-            return <p>{errorMsg}</p>
-        } else {
-            return null;
-        }
+
+    const closeModal = () => {
+        setDisplayResponseAlert(0);
+        handleCloseModal();
+    }
+
+    //unique to this component, and will only effect this component's alert
+    const showResponseAlert = async (responseText, severity) => {
+        setResponseAlertText(responseText);
+        setResponseAlertSeverity(severity);
+        setDisplayResponseAlert(100);
     }
 
     //handle confirmation of adding subtitle
@@ -75,15 +88,10 @@ const AddSubtitleModal = ({
                 //if there does not exist the next subtitle, then make the new subtitle's end time 1 second after the first
                 endTimeInput = subtitleObject.end + 1;
             }
-            setErrorMsg("");
-            setDisplayError(false);
-            handleDisplayListLoader(true);
             await handleInsert(startTimeInput, endTimeInput, contentInput, subtitleObject);
-            handleDisplayListLoader(false);
+            closeModal();
         } catch (error) {
-            console.log(error);
-            setErrorMsg(error.message);
-            setDisplayError(true);
+            showResponseAlert(error.message, "warning");
             handleDisplayListLoader(false);
         }
     }
@@ -100,7 +108,7 @@ const AddSubtitleModal = ({
                     <div className="add-subtitle-container">
                         <div className={"modal-header-container"}>
                             <h2 className={"modal-header-heading"}>Add Subtitle: </h2>
-                            <div onClick={() => handleCloseModal()}>
+                            <div onClick={() => closeModal()}>
                                 <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                             </div>
                         </div>
@@ -134,7 +142,9 @@ const AddSubtitleModal = ({
                                 onBlur={(event) => {handleEndTimeChange(event)}}
                             />
                         </div>
-                        {errorMessage()}
+                        <div className={"response-alert-container"} style={{opacity: displayResponseAlert, display: displayResponseAlert === 0 ? "none" : "flex"}}>
+                            <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity}/>
+                        </div>
                         <Button size={"medium"} variant={"contained"} onClick={handleConfirmClick}>
                             Confirm
                         </Button>

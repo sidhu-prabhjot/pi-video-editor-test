@@ -42,8 +42,6 @@ const InfoModal = ({isOpen, onCloseModal, info, header}) => {
         try {
             return info.map((infoItem, index) => {
 
-                console.log(infoItem);
-
                 //accessing the icon as an icon instead of object
                 var name = 'abc';
                 var tempObject = {};

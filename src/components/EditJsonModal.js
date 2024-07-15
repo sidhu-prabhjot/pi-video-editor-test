@@ -1,8 +1,15 @@
 import { useState } from 'react';
+
+//custom components
+import ResponseAlert from './ResponseAlert';
+
+//material ui
 import Box from '@mui/material/Box';
 import Modal from '@mui/material/Modal';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+
+//fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 
@@ -39,27 +46,38 @@ const EditJsonModal = ({
     lastUpdatedBy,
     lastUpdatedByInput,
     note,
+    noteInput,
     handleCloseModal,
     handleLastUpdatedByChange,
     handleNoteChange,
     handleConfirm,
 }) => {
-    const [displayError, setDisplayError] = useState(false);
-    const [errorMsg, setErrorMsg] = useState("");
+    const [responseAlertText, setResponseAlertText] = useState("");
+    const [responseAlertSeverity, setResponseAlertSeverity] = useState("success");
+    const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
 
-    const errorMessage = () => {
-        if (displayError) {
-            return <p>{errorMsg}</p>
-        } else {
-            return null;
-        }
+    //makes sure that the error message is hidden before closing the modal
+    const closeModal = () => {
+        setDisplayResponseAlert(0);
+        handleCloseModal();
     }
     
     const handleConfirmClick = async () => {
-        if(lastUpdatedByInput !== "") {
-            await handleConfirm();
-            handleCloseModal();
+
+        try {
+            await handleConfirm(lastUpdatedByInput);
+            closeModal();
+        } catch (error) {
+            showResponseAlert(error.message, "warning");
         }
+ 
+    }
+
+    //unique to this component, and will only effect this component's alert
+    const showResponseAlert = async (responseText, severity) => {
+        setResponseAlertText(responseText);
+        setResponseAlertSeverity(severity);
+        setDisplayResponseAlert(100);
     }
 
     return (
@@ -84,7 +102,7 @@ const EditJsonModal = ({
                                 id="outlined-required"
                                 label="Last Updated By"
                                 size={"small"}
-                                defaultValue={lastUpdatedBy}
+                                defaultValue={`${lastUpdatedBy}`}
                                 onBlur={(event) => handleLastUpdatedByChange(event)}
                             />
                         </div>
@@ -94,11 +112,13 @@ const EditJsonModal = ({
                                 id="outlined-required"
                                 label="Note"
                                 size={"small"}
-                                defaultValue={note}
+                                defaultValue={`${note}`}
                                 onBlur={(event) => handleNoteChange(event)}
                             />
                         </div>
-                        {errorMessage()}
+                        <div className={"response-alert-container"} style={{opacity: displayResponseAlert, display: displayResponseAlert === 0 ? "none" : "flex"}}>
+                            <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity}/>
+                        </div>
                         <Button size={"medium"} variant={"contained"} onClick={handleConfirmClick}>
                             Confirm
                         </Button>

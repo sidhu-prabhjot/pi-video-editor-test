@@ -11,6 +11,7 @@ import '../styles/Main.css';
 import '../styles/List.css';
 
 const ListItem = ({
+    darkMode,
     subtitleObject,
     currentSubtitle,
     handleStartTimeChange,
