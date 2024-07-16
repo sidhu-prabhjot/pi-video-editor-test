@@ -29,10 +29,13 @@ const ListItem = ({
     handleMeasure,
     handleShowResponseAlert,
     forceUpdate,
+    handleTimeVerification,
 }) => {
 
     const [checked, setChecked] = useState(false);
     const [display, setDisplay] = useState(0);
+    const [startTimeInput, setStartTimeInput] = useState(subtitleObject.start);
+    const [endTimeInput, setEndTimeInput] = useState(subtitleObject.end);
 
     const onCheckboxChange = (event) => {
         event.stopPropagation();
@@ -98,7 +101,17 @@ const ListItem = ({
     //set data when a component input loses focus
     const onOnBlur = () => {
         handleListClick(subtitleObject);
-        handleSetParentData();
+        try {
+            //verify that the times entered are valid
+            handleTimeVerification(startTimeInput, endTimeInput);
+
+            //only update values in data if they pass verification
+            handleStartTimeChange(startTimeInput, subtitleObject);
+            handleEndTimeChange(endTimeInput, subtitleObject);
+            handleSetParentData();
+        } catch(error) {
+            handleShowResponseAlert(error.message, "warning");
+        }
     }
 
     useEffect(() => {
@@ -129,7 +142,7 @@ const ListItem = ({
                         label="Start Time"
                         defaultValue={subtitleObject.start}
                         size={"small"}
-                        onChange={(event) => handleStartTimeChange(event.target.value, subtitleObject)}
+                        onChange={(event) => setStartTimeInput(event.target.value)}
                         onClick = {(event) => event.stopPropagation()}
                         onBlur={() => onOnBlur()}
                     />
@@ -155,7 +168,7 @@ const ListItem = ({
                         label="End Time"
                         defaultValue={subtitleObject.end}
                         size={"small"}
-                        onChange={(event) => handleEndTimeChange(event.target.value, subtitleObject)}
+                        onChange={(event) => setEndTimeInput(event.target.value)}
                         onClick = {(event) => event.stopPropagation()}
                         onBlur={() => onOnBlur()}
                     />

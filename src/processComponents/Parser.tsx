@@ -67,7 +67,7 @@ export const parseVTTFile = (fileData, idMap) => {
         }
 
         if(data.linePosition === "auto") {
-            data.linePosition = 85;
+            data.linePosition = 100;
         }
 
         //check for negative numbers in linePosition (negative means percentage from bottom)

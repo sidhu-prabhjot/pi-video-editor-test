@@ -1,4 +1,18 @@
-import { faCirclePlus, faCodeMerge, faClone, faGear, faTrash, faCircleArrowLeft, faCircleArrowRight} from '@fortawesome/free-solid-svg-icons';
+import {
+    faCirclePlus,
+    faCodeMerge,
+    faClone,
+    faGear,
+    faTrash,
+    faCircleArrowLeft,
+    faCircleArrowRight,
+    faLink,
+    faFileLines,
+    faReceipt,
+    faCalendarDays,
+    faFilePen,
+    faUser,
+} from '@fortawesome/free-solid-svg-icons';
 
 //editor usage instructions info modal data
 export const usageInfoData = [
@@ -14,13 +28,13 @@ export const usageInfoData = [
 //json file metadata info modal data
 export const metaDataInfoData = (videoSrc, filename, importFileType, createdAt, updatedAt, lastUpdatedBy, note) => { 
     return [
-    {icon: faTrash, primaryText:"Video Source", secondaryText: videoSrc},
-    {icon: faTrash, primaryText:"File Name", secondaryText: filename},
-    {icon: faTrash, primaryText:"Original Imported File Type", secondaryText: importFileType},
-    {icon: faTrash, primaryText:"Creation Date", secondaryText: createdAt},
-    {icon: faTrash, primaryText:"Last Update", secondaryText: updatedAt},
-    {icon: faTrash, primaryText:"Last Updated By", secondaryText: lastUpdatedBy},
-    {icon: faTrash, primaryText:"Note", secondaryText: note},
+    {icon: faLink, primaryText:"Video Source", secondaryText: videoSrc},
+    {icon: faFileLines, primaryText:"File Name", secondaryText: filename},
+    {icon: faReceipt, primaryText:"Original Imported File Type", secondaryText: importFileType},
+    {icon: faCalendarDays, primaryText:"Creation Date", secondaryText: createdAt},
+    {icon: faCalendarDays, primaryText:"Last Update", secondaryText: updatedAt},
+    {icon: faUser, primaryText:"Last Updated By", secondaryText: lastUpdatedBy},
+    {icon: faFilePen, primaryText:"Note", secondaryText: note},
     ]
 };
 

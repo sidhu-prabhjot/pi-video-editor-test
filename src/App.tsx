@@ -208,26 +208,33 @@ const App = () => {
       source: {
         enter: ({ action }) => {
 
-          currentSubtitle.data.backgroundColor = "#E5E5E5";
-
           let subtitleObject = action as SubtitleObject;
+          subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
 
           subtitleObject.data.backgroundColor = "#FCA311";
 
-          setCurrentSubtitle({...subtitleObject});
+          setCurrentSubtitle((action as SubtitleObject));
 
           let currentSubtitleElement = document.getElementById("subtitle");
           if(currentSubtitleElement) {
             currentSubtitleElement.style.opacity = "100";
           }
 
-          //resync timeline and player if it gets out of hand
-          if(timelineState.current.getTime() - playerRef.current.currentTime() > 0.1 || timelineState.current.getTime() - playerRef.current.currentTime() < -0.1) {
-            timelineState.current.setTime(playerRef.current.currentTime());
+            //resync timeline and player if it gets out of hand
+            if(timelineState.current.getTime() - playerRef.current.currentTime() > 0.1 || timelineState.current.getTime() - playerRef.current.currentTime() < -0.1) {
+              timelineState.current.setTime(playerRef.current.currentTime());
+            }
+
+        },
+        leave: ({ action }) => {
+          let subtitleObject = action as SubtitleObject;
+
+          subtitleObject.data.backgroundColor = "#E5E5E5";
+          
+          let currentSubtitleElement = document.getElementById("subtitle");
+          if(currentSubtitleElement) {
+            currentSubtitleElement.style.opacity = "0";
           }
-
-          subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
-
         },
       },
     },
@@ -402,12 +409,10 @@ const App = () => {
       setData([...data]);
       update(fallbackSubtitleObject);
       await setTime(fallbackSubtitleObject);
-  
-      playerRef.current.play();
-      timelineState.current.play({});
-      showResponseAlert("Successfully deleted", "success");
+
+      showResponseAlert("Successfully deleted!", "success");
     } else {
-      showResponseAlert("Cannot delete the only subtitle", "error");
+      showResponseAlert("Cannot delete the subtitle!", "error");
     }
   };
   
@@ -805,17 +810,23 @@ const App = () => {
         console.log("File load log:", fileObject);
 
         let result;
+        let noFileTypeFilename;
 
         if (fileObject.name.includes(".vtt")) {
           result = parseVTTFile(reader.result, tempIdMap);
           setFileType("vtt");
+          //remove file type ending and store file name 
+          noFileTypeFilename = fileObject.name.replace('.vtt', '');
+          setFilename(noFileTypeFilename);
         } else if (fileObject.name.includes(".srt")) {
           result = parseSRTFile(reader.result, tempIdMap);
           setFileType("srt");
+          //remove file type ending and store file name 
+          noFileTypeFilename = fileObject.name.replace('.srt', '');
+          setFilename(noFileTypeFilename);
         } else if (fileObject.name.includes(".json")) {
           let initialResult = parseJSONFile(reader.result);
           result = initialResult.data;
-          setFilename(initialResult.metaData.filename);
           // Set meta data
           setMetaFilename(initialResult.metaData.filename);
           setMetaVideoSrc(initialResult.metaData.videosrc);
@@ -1165,13 +1176,47 @@ const App = () => {
     }
   }
 
+  //when verifying time, need both start and end to make sure they do not overlap each other
+  const verifyTimeInputs = (startTime, endTime) => {
+
+    //it is possible that these values could be a string, so conversion to integer is necessary
+    startTime = Number(startTime);
+    endTime = Number(endTime);
+
+    console.log("startTime: ", startTime, " | endTime: ", endTime);
+
+    if(endTime < 0 || startTime < 0) {
+      throw new Error("cannot have negative time!")
+    }
+
+    if(endTime < startTime) {
+      throw new Error("start time cannot occur after end time!")
+    }
+
+    //check for a next subtitle and then check for overlap with it
+    const nextSubtitle = data[0].actions[currentSubtitle.data.subtitleNumber + 1];
+    if (nextSubtitle && endTime > nextSubtitle.start) {
+      throw new Error("action will cause overlapping subtitles!");
+    }
+
+    if (endTime === startTime) {
+      throw new Error("Subtitle has no duration!");
+    }
+  }
+
   //////////////////////////////////////////////////////////////////////////// React hooks utilization
 
   useEffect(() => {
     console.log("current dataset: ", data);
     setListDisabledClass("");
     setDisplayListLoader(false);
-  }, [data])
+  }, [data]);
+
+  useEffect(() => {
+    //once metadata is extracted, set the filename (without file type ending)
+    console.log("meta filename changed to: ", metaFilename);
+    setFilename(metaFilename);
+  }, [metaFilename])
 
   //display a prompt confirming reload
   useEffect(() => {
@@ -1223,6 +1268,7 @@ const App = () => {
               handleSplit={splitSubtitle}
               handleDisplayListLoader={onDisplayListLoader}
               forceUpdate={forceUpdate}
+              handleTimeVerification={verifyTimeInputs}
               handleShowResponseAlert={showResponseAlert}
             />
           </div>
@@ -1340,7 +1386,7 @@ const App = () => {
         </div>
         <div className={`video-container${darkModeClassAppend}`}>
           <div className={"toolbar-container"}>
-            <TextSubmit handleInputChange={onVideoLinkChange} handleSubmit={onVideoLinkSubmit} submitButtonText={"Insert"} label={"Video Link"} displaySubmitButton={true} defaultValue={""}/>
+            <TextSubmit handleInputChange={onVideoLinkChange} handleSubmit={onVideoLinkSubmit} submitButtonText={"Insert"} label={"Video Link"} displaySubmitButton={true} value={videoLink}/>
             <div className={"drag-drop-container"}>
               <DragDrop handleShowResponseAlert={showResponseAlert} handleVideoUpload={onSubtitleFileUpload} />
             </div>
@@ -1362,7 +1408,7 @@ const App = () => {
           </div>
           <div className={"autoscroll-switch-container"}>
             <div>
-              <TextSubmit handleInputChange={onFilenameInputChange} handleSubmit={() => {}} submitButtonText={""} label={"File Name"} displaySubmitButton={false} defaultValue={metaFilename}/>
+              <TextSubmit handleInputChange={onFilenameInputChange} handleSubmit={() => {}} submitButtonText={""} label={"File Name"} displaySubmitButton={false} value={filename}/>
             </div>
             <div>
               <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
