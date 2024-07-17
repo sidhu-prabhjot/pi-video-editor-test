@@ -93,9 +93,9 @@ const ListItem = ({
     }
 
     const onListItemClick = async () => {
+        handleListClick(subtitleObject);
         currentSubtitle.data.backgroundColor = "#E5E5E5";
         await handleDisplayListLoader();
-        handleListClick(subtitleObject);
     }
 
     //set data when a component input loses focus
@@ -215,7 +215,7 @@ const ListItem = ({
                 onMouseLeave={() => setDisplay(0)}
             >
                 <FontAwesomeIcon onClick={() => onHandleSplitClick()} style={{ opacity: display,}} className={"first-merge-button merge-subtitle-button clickable-icon list-item-action-button"} icon={faClone} />
-                <div onClick={() => handleOpenModal(subtitleObject.end)}>
+                <div onClick={() => handleOpenModal()}>
                     <FontAwesomeIcon style={{ opacity: display}} className={"add-subtitle-button clickable-icon list-item-action-button"} icon={faCirclePlus} />
                 </div>
                 <FontAwesomeIcon onClick={() => onHandleMergeClick()} style={{ opacity: display}} className={"second-merge-button merge-subtitle-button clickable-icon list-item-action-button"} icon={faCodeMerge} />

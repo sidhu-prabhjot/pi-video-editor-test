@@ -14,10 +14,14 @@
 
 .toolbar-container {
     display: flex;
-    justify-content: space-between;
-    align-items: end;
-    padding: 10px 0px 0px 0px;
-    margin: 0px 0px 4px 0px;
+    align-items: center;
+    padding: 10px 0px 10px 0px;
+}
+
+.file-handling-container {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
 }
 
 .video-player-container {
@@ -28,7 +32,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 4px 4px 4px;
+    padding: 4px 8px 4px 4px;
     background-color: #e7e5e5;
 }
 
