@@ -32,8 +32,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 8px 4px 4px;
-    background-color: #e7e5e5;
+    background-color: transparent;
+    margin: 4px 8px 4px 0px;
+}
+
+.MuiAutocomplete-clearIndicator {
+    fill: "white";
 }
 
 .alert-info-container {
@@ -57,7 +61,7 @@
 
 .subtitle-list-container {
     overflow-y: hidden;
-    padding: 5px 5px 0px 5px;
+    padding: 5px 5px 0px 0px;
     height: 100%;
 }
 
@@ -94,6 +98,14 @@
     margin: 0px 8px 0px 0px;
 }
 
+.clickable-icon:hover {
+    cursor: pointer;
+}
+
+.clickable-icon {
+    height: 24px;
+}
+
 .autoscroll-switch-container {
     display: flex;
     flex-direction: row;
@@ -124,7 +136,7 @@
 }
 
 .edit-all-button {
-    margin: 0px 4px 0px 0px!important;
+    margin: 0px 8px 0px 0px!important;
 }
 
 .info-modal-button {

@@ -10,7 +10,7 @@ import {
     faFileLines,
     faReceipt,
     faCalendarDays,
-    faFilePen,
+    faPencil,
     faUser,
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -34,7 +34,7 @@ export const metaDataInfoData = (videoSrc, filename, importFileType, createdAt, 
     {icon: faCalendarDays, primaryText:"Creation Date", secondaryText: createdAt},
     {icon: faCalendarDays, primaryText:"Last Update", secondaryText: updatedAt},
     {icon: faUser, primaryText:"Last Updated By", secondaryText: lastUpdatedBy},
-    {icon: faFilePen, primaryText:"Note", secondaryText: note},
+    {icon: faPencil, primaryText:"Note", secondaryText: note},
     ]
 };
 

@@ -37,46 +37,47 @@ interface SubtitleObject extends TimelineAction {
 }
 
 //the data structure for an entire row in the timeline
-interface CustomTimelineRow extends TimelineRow {
+interface SubtitleData extends TimelineRow {
   actions: SubtitleObject[];
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////// initialization
 
-//all the data that exists in a SINGLE timeline row (moved outside component to prevent multiple calls)
-const mockData: CustomTimelineRow[] = parseVTTFile("", {});
+//temporary data
+const mockData: SubtitleData[] = parseVTTFile("", {});
 
 const App = () => {
 
+  /*data that is shared between components including the main editor component. Critical
+  to the functionality of the editor*/
   const [data, setData] = useState(mockData);
-  //handling link inserts for the video
   const [videoLink, setVideoLink] = useState("");
-
   const [idMap, setIdMap] = useState({});
 
+  const [darkModeClassAppend, setDarkModeClassAppend] = useState("");
 
   //video link input field changes
   const onVideoLinkChange = (event) => {
     setVideoLink(event.target.value);
   }
   
-
-  //video link input field changes
+  //video link input is submitted
   const onVideoLinkSubmit = () => {
     setVideoLink(videoLink);
     console.log("(App.tsx) uploaded video link: ", videoLink);
   }
 
+  //idMap is generated **IdMap should be generated here
   const onCreationOfIdMap = (idMap) => {
     console.log("(App.tsx) created idMap: ", idMap);
     setIdMap(idMap);
   }
 
-  const updateData = (uploadedData) => {
+  //update the shared data
+  const onUpdateData = (uploadedData) => {
     console.log("(App.tsx) parsed data: ", uploadedData);
     setData([...uploadedData]);
   }
-
 
   //display a prompt confirming reload
   useEffect(() => {
@@ -92,18 +93,18 @@ const App = () => {
     <div>
       <Toolbar
         handleVideoLinkSubmit={onVideoLinkSubmit}
-        handleIdMapCreation={onCreationOfIdMap}
-        handleUpdateSharedData={updateData}
+        handleUpdateIdMap={onCreationOfIdMap}
+        handleUpdateSharedData={onUpdateData}
         handleVideoLinkChange={onVideoLinkChange}
         editedData={data}
         videoLink={videoLink}
       />
       <div>
         <Editor
-        uploadedData={data}
-        generatedIdMap={idMap} 
+        sharedData={data}
+        sharedIdMap={idMap} 
         uploadedVideoLink={videoLink}
-        handleUpdateSharedData={updateData}/>
+        handleUpdateSharedData={onUpdateData}/>
       </div>
     </div>
   );

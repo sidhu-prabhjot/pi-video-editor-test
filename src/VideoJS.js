@@ -46,7 +46,7 @@ export const VideoJS = ({options, onReady, currentSubtitle, alignment, linePosit
   }, [playerRef]);
 
   return (
-    <div className={"video-js-container"} style={{margin: "4px"}}>
+    <div className={"video-js-container"}>
       <div className={"video-container"} style={{overflow:"hidden"}} ref={videoRef}>
       <div id={"subtitle"} className={"video-js-subtitle"} style={{justifyContent: `${alignment}`}}>
             <div style={{backgroundColor: "transparent", padding: "4px 16px 4px 16px"}}>

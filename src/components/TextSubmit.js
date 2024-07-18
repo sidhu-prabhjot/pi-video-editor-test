@@ -9,6 +9,7 @@ const TextSubmit = ({handleSubmit, handleInputChange, submitButtonText, label, d
     return (
         <div className={"text-submit-container"}>
             <TextField
+            sx={{width: 180}}
             className={"submit-input"}
             required
             id="outlined-required"

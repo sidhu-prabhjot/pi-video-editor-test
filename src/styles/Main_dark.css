@@ -1,4 +1,12 @@
 /*dark mode*/
+* {
+    color: "white";
+}
+
+.list-item-wrapper-dark {
+    background-color: rgb(201, 201, 201);
+}
+
 .search-bar-container-dark {
     display: flex;
     align-items: center;
@@ -13,19 +21,25 @@
     flex-direction: column;
     overflow-y: scroll;
     overflow-x: hidden;
-    background-color: #00111A;
+    background-color: #000E14;
 }
 
+/*main editor toolbar*/
 .player-config-row-dark {
     display: flex;
     flex-direction: column;
     height: 30vh;
-    background-color:#00111A;
+    background-color:#003652;
+}
+
+.clickable-icon-dark {
+    height: 24px;
+    color: white;
 }
 
 .scroll-container-dark {
     display: flex;
     flex: 1;
     flex-direction: column;
-    background-color: #00141F;
+    background-color: #001B29;
 }
