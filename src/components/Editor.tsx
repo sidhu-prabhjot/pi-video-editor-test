@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect} from 'react';
 
 //timeline
-import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
-import { cloneDeep} from 'lodash';
-import { CustomRender0, CustomRender1} from '../timlineComponents/custom';
+import {Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
+import {cloneDeep} from 'lodash';
+import {CustomRender1} from '../timlineComponents/custom';
 import TimelinePlayer from '../timlineComponents/player';
 
 //videojs
@@ -39,7 +39,6 @@ import {usageInfoData} from '../DataExports/InfoModalData'
 import '../timelineStyles/index.less';
 import '../styles/List.css';
 import '../styles/Main.css';
-import '../styles/Main_dark.css';
 import '../styles/Subtitle.css';
 
 
@@ -116,7 +115,7 @@ interface SubtitleData extends TimelineRow {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////// initialization
-const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedData}) => {
+const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedData, toolbarMode}) => {
 
   //REFS:
   //the current state of the timeline and its operations (can be manipulated)
@@ -163,6 +162,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //loader and diasbling class for the list
   const [displayListLoader, setDisplayListLoader] = useState(false);
   const [listDisabledClass, setListDisabledClass] = useState("");
+  const [traverseButtonDisabledClass, setTraverseButtonDisabledClass] = useState("");
 
   //response alert state management
   const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
@@ -265,6 +265,10 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   const insertSubtitle = async (startTime, endTime, content, currentSubtitle) => {
     try {
+
+      startTime = Number(startTime);
+      endTime = Number(endTime);
+
       // Disable the list during the insertion process
       setListDisabledClass("subtitle-list-container-disabled");
   
@@ -278,7 +282,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       // Check for overlapping subtitles
       if (startTime < currentSubtitle.end) throw new Error("Insertion will cause overlapping subtitles!");
   
-      const nextSubtitle = data[0]?.actions[currentSubtitle.data.subtitleNumber + 1];
+      const nextSubtitle = data[0].actions[currentSubtitle.data.subtitleNumber + 1];
       if (nextSubtitle && endTime > nextSubtitle.start) throw new Error("Insertion will cause overlapping subtitles!");
   
       // Check for zero duration
@@ -329,9 +333,15 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   };
   
   const deleteSubtitle = async (subtitleObject) => {
+
+    if(data[0].actions.length <= 1) {
+      throw new Error("Cannot delete the last subtitle!");
+    }
+    
+    // Prevent further user actions until deletion is complete
+    await setListDisabledClass("subtitle-list-container-disabled");
+    await setDisplayListLoader(true);
     try {
-      // Prevent further user actions until deletion is complete
-      setListDisabledClass("subtitle-list-container-disabled");
 
       // Pause the player and timeline
       playerRef.current.pause();
@@ -371,12 +381,16 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       console.error("Error deleting subtitle:", error.message);
       showResponseAlert("Error deleting subtitle: " + error.message, "error");
     } finally {
-      // Re-enable user actions after deletion
-      setListDisabledClass("");
+
     }
   };
   
   const mergeSubtitle = async (subtitleObject) => {
+    
+    if(data[0].actions.length <= 1) {
+      throw new Error("No other subtitles to merge with!");
+    }
+
     try {
       // Disable the list during the merge process
       setListDisabledClass("subtitle-list-container-disabled");
@@ -549,8 +563,10 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     } else {
       if(shift + subtitleObject.data.subtitleNumber < data[0].actions.length) {
         await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber + shift);
+        await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber - shift);
       } else {
         await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber - shift);
+        await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber + shift);
       }
       await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
     }
@@ -738,12 +754,11 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //handles when a subtitle in the subtitle side list is clicked
   const onSubtitleListClick = async (subtitleObject) => {
 
-    currentSubtitle.data.backgroundColor = darkModeClassAppend ? "#003D5C" : "#E5E5E5";
+    subtitleObject.data.backgroundColor = "#FCA311";
 
     console.log("clicked subtitle: ", subtitleObject.data.subtitleNumber);
     playerRef.current.currentTime(subtitleObject.start);
 
-    updateSubtitleNumbers(data);
     await setTime(subtitleObject);
     await updateSubtitleList(subtitleObject, 5);
 
@@ -805,8 +820,11 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   //traverse up/backward in the subtitle list to find the previous selected-for-edit subtitle
   const handleSelectedLeftClick = async () => {
-    let i = currentSubtitle.data.subtitleNumber - 1;
 
+    setTraverseButtonDisabledClass("selected-traverse-button-disabled");
+
+    //move to previous subtitle and traverse up from there
+    let i = currentSubtitle.data.subtitleNumber - 1;
     while(i > 0 && data[0].actions[i].data.toEdit == false) {
       i--;
     }
@@ -815,27 +833,38 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
     //verify subtitle exists, and that it has been selected to edit
     if(data[0].actions[i] && data[0].actions[i].data.toEdit == true) {
-      await setTime(data[0].actions[i]);
-      await updateSubtitleList(data[0].actions[i], 5);
+      //moving to subtitle is handled as a list click
+      onSubtitleListClick(data[0].actions[i] as SubtitleObject);
     }
+
+    setTraverseButtonDisabledClass("");
 
   }
 
   //traverse down/forward in the subtitle list to find next selected-for-edit subtitle
   const handleSelectedRightClick = async () => {
-    let i = currentSubtitle.data.subtitleNumber + 1;
 
-    //loop down/forward in the subtitle list until the next selected-for-edit subtitle is found
+    setTraverseButtonDisabledClass("selected-traverse-button-disabled");
+
+    //move to the next subtitle and traverse from there
+    let i = currentSubtitle.data.subtitleNumber + 1;
     while(i < data[0].actions.length && data[0].actions[i].data.toEdit == false) {
       i++;
     }
 
     //verify subtitle exists, and that it has been selected to edit, then set it as current subtitle
     if(data[0].actions[i] && data[0].actions[i].data.toEdit == true) {
-      await setTime(data[0].actions[i]);
-      await updateSubtitleList(data[0].actions[i], 5);
+      //moving to subtitle is handled as a list click
+      onSubtitleListClick(data[0].actions[i] as SubtitleObject);
     }
 
+    setTraverseButtonDisabledClass("");
+
+  }
+
+  //handle saving a file that was pulled from website and not uploaded
+  const handleSaveNotUploadedData = () => {
+    console.log("handleSaveNotUploadedData triggered!");
   }
 
   //turn dark mode on and off TO (IMPLEMENT STILL*)
@@ -907,8 +936,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     setEditAllModelIsOpen(false);
   }
 
-  const openAddSubtitleModal = async () => {
-    await updateData([...data]);
+  const openAddSubtitleModal = () => {
     setAddSubtitleModalIsOpen(true);
   }
 
@@ -971,6 +999,12 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     if (nextSubtitle && endTime > nextSubtitle.start) {
       throw new Error("action will cause overlapping subtitles!");
     }
+
+    //check for an existing next subtitle and then check for overlap with it
+    const prevSubtitle = data[0].actions[currentSubtitle.data.subtitleNumber - 1];
+    if (prevSubtitle && startTime < prevSubtitle.end) {
+      throw new Error("action will cause overlapping subtitles!");
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////// returning elements
@@ -994,6 +1028,15 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       return <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={async () => await selectAllForEdit()}>Select All</Button>;
     } else {
       return <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={async () => await unselectAllForEdit()}>Unselect All</Button>
+    }
+  }
+
+  //when toolbar mode is not on, then show the button to allow saving of the file that is being worked on
+  const getSaveButton = () => {
+    if (!toolbarMode) {
+      return <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={() => handleSaveNotUploadedData()}>Save</Button>;
+    } else {
+      return null;
     }
   }
 
@@ -1073,7 +1116,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   }
 
   return (
-    <div className="main-container" style={{height:"100vh",  display:"flex", flexDirection:"column"}}>
+    <div className="main-container" style={{height: "100%", display:"flex", flexDirection:"column"}}>
       <EditAllModal
         isOpen={editAllModelIsOpen}
         handleCloseModal={closeEditAllModal}
@@ -1106,7 +1149,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
             header={"Usage"}
           />
         </div>
-      <div className="main-row-1" style={{height:"70vh", display:"flex", flexDirection:"row", justifyContent:"space-evenly"}}>
+      <div className="main-row-1" style={{display:"flex", flexDirection:"row", flex: "1", justifyContent:"space-evenly"}}>
         <div className={`scroll-container${darkModeClassAppend}`}>
           <div id={"subtitle-list-container-id"} className={`subtitle-list-container ` + listDisabledClass}>
             {getDisplayListLoader()}
@@ -1152,15 +1195,15 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           </div>
         </div>
       </div>
-      <div className={`player-config-row${darkModeClassAppend} timeline-editor-engine main-row-2`}>
+      <div className={`player-config-row${darkModeClassAppend} timeline-editor-engine main-row-2`} style={{display: "flex"}}>
         <div className="player-config">
           <div className={"list-edit-config-container"}>
             <SideListSearch searchBarWidth={200} handleResultClick={onSearchResultClick} dataObjects={data ? data[0].actions : []} />
             {getSelectAllButton()}
             <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div>
-              <FontAwesomeIcon onClick={async () => await handleSelectedLeftClick()} className={`selected-left-click selected-traverse-button clickable-icon${darkModeClassAppend}`} icon={faCircleArrowLeft} />
-              <FontAwesomeIcon onClick={async () => await handleSelectedRightClick()} className={`selected-right-click selected-traverse-button clickable-icon${darkModeClassAppend}`} icon={faCircleArrowRight} />
+              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={`selected-left-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon${darkModeClassAppend}`} icon={faCircleArrowLeft} />
+              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={`selected-right-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon${darkModeClassAppend}`} icon={faCircleArrowRight} />
             </div>
           </div>
           <div className={"autoscroll-switch-container"}>
@@ -1168,8 +1211,9 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
               <div className={"response-alert-container"} style={{opacity: displayResponseAlert}}>
                 <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity} />
               </div>
+              {getSaveButton()}
               <FontAwesomeIcon onClick={() => openInfoModal()} className={`info-modal-button clickable-icon${darkModeClassAppend}`} icon={faCircleInfo} />
-              <MaterialUISwitch sx={{ m: 0 }} defaultChecked onChange={() => toggleDarkMode()}/>
+              {/* <MaterialUISwitch sx={{ m: 0 }} defaultChecked onChange={() => toggleDarkMode()}/> */}
             </div>
           </div>
         </div>
@@ -1210,9 +1254,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           }}
           getActionRender={(action, row) => {
             let subtitleObject = action as SubtitleObject;
-            if (subtitleObject.effectId === 'effect0') {
-              return <CustomRender0 onActionClick={onTimelineSubtitleClick} action={subtitleObject} currentSubtitle={currentSubtitle} row={row as SubtitleData} />;
-            } else if (action.effectId === 'effect1') {
+            if (action.effectId === 'effect1') {
               return <CustomRender1 onActionClick={onTimelineSubtitleClick} action={subtitleObject} currentSubtitle={currentSubtitle} row={row as SubtitleData} />;
             }
           }}

@@ -50,7 +50,7 @@ const ListItem = ({
             await handleDeleteSubtitle(subtitleObject);
             handleShowResponseAlert("successfully deleted", "success");
         } catch (error) {
-            handleShowResponseAlert("could not delete subtitle", "warning");
+            handleShowResponseAlert(error.message, "warning");
         }
     };
 
@@ -61,7 +61,7 @@ const ListItem = ({
             await handleMerge(subtitleObject);
             handleShowResponseAlert("successfully merged", "success");
         } catch(error) {
-            handleShowResponseAlert("could not merge subtitles", "warning");
+            handleShowResponseAlert(error.message, "warning");
         }
     };
 
@@ -72,7 +72,7 @@ const ListItem = ({
             await handleSplit(subtitleObject);
             handleShowResponseAlert("successfully split", "success");
         } catch(error) {
-            handleShowResponseAlert("could not split subtitles", "warning");
+            handleShowResponseAlert(error.message, "warning");
         }
     };
 
@@ -93,8 +93,9 @@ const ListItem = ({
     }
 
     const onListItemClick = async () => {
-        handleListClick(subtitleObject);
+        //set to non-highlight
         currentSubtitle.data.backgroundColor = "#E5E5E5";
+        handleListClick(subtitleObject);
         await handleDisplayListLoader();
     }
 

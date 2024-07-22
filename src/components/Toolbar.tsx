@@ -121,7 +121,6 @@ const Toolbar = ({
     downloadFile(JSON.stringify(exportObject), "json");
   }
 
-  //TODO: merge these download functions into one
   //download the subtitle file (filetypes include: vtt, srt, json)
   const downloadFile = (generatedString, fileType) => {
     const element = document.createElement("a");
@@ -145,6 +144,8 @@ const Toolbar = ({
 
         let result;
         let noFileTypeFilename;
+
+        handleUpdateSharedData([]);
 
         if (fileObject.name.includes(".vtt")) {
           result = parseVTTFile(reader.result, tempIdMap);

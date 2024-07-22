@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500&display=swap');
 
-/*style={{backgroundColor: "#ffffff", height: "80px", padding: "5px", borderRadius: "2px", border: "2px solid rgba(0, 0, 0, 0.05)"}}*/
 .action-container {
     display: flex;
     justify-content: center;
@@ -9,10 +8,12 @@
     padding: 16px 4px 16px 4px;
     border-radius: 2.5px;
     background-color: #FFFFFF;
-    border: 2px solid #14213D;
+    border: 1px solid #14213D;
+    overflow: hidden;
 }
 
 .action-content {
+    padding: 0px 2px 0px 2px;
     font-size: 12px;
     font-family: 'Roboto', sans-serif; /* Add this line */
 }

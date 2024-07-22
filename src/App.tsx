@@ -54,8 +54,6 @@ const App = () => {
   const [videoLink, setVideoLink] = useState("");
   const [idMap, setIdMap] = useState({});
 
-  const [darkModeClassAppend, setDarkModeClassAppend] = useState("");
-
   //video link input field changes
   const onVideoLinkChange = (event) => {
     setVideoLink(event.target.value);
@@ -90,21 +88,25 @@ const App = () => {
 
 
   return (
-    <div>
-      <Toolbar
+    <div style={{height: "100vh"}}>
+      <div style={{width: "100%"}}>
+        <Toolbar
         handleVideoLinkSubmit={onVideoLinkSubmit}
         handleUpdateIdMap={onCreationOfIdMap}
         handleUpdateSharedData={onUpdateData}
         handleVideoLinkChange={onVideoLinkChange}
         editedData={data}
         videoLink={videoLink}
-      />
-      <div>
+        />
+      </div>
+      <div style={{height: "100%"}}>
         <Editor
         sharedData={data}
         sharedIdMap={idMap} 
         uploadedVideoLink={videoLink}
-        handleUpdateSharedData={onUpdateData}/>
+        handleUpdateSharedData={onUpdateData}
+        toolbarMode={true}
+        />
       </div>
     </div>
   );

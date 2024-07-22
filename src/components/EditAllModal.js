@@ -135,7 +135,7 @@ const EditAllModal = ({
                             required
                             id="outlined-required"
                             label="Vertical"
-                            defaultValue={100}
+                            defaultValue={0}
                             size={"small"}
                             onBlur={(event) => handleEditAllLinePositionChange(event.target.value)}
                             />

@@ -28,10 +28,8 @@ const SideListSearch = ({ searchBarWidth, dataObjects, handleResultClick }) => {
         <div className={"search-bar-container"}>
             <Stack spacing={2} sx={{
                 width: searchBarWidth,
-                bgcolor: "#00293D",
+                bgcolor: "#eae9e9",
                 borderRadius: "5px",
-                input: {color: "white"},
-                label: {color: "white"},
                 }}>
                 <Autocomplete
                     className="search-bar"

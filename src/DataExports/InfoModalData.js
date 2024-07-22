@@ -12,6 +12,7 @@ import {
     faCalendarDays,
     faPencil,
     faUser,
+    faCircleInfo
 } from '@fortawesome/free-solid-svg-icons';
 
 //editor usage instructions info modal data
@@ -23,6 +24,7 @@ export const usageInfoData = [
     {icon: faGear, primaryText:"Advanced Edit", secondaryText:"Opens the advanced options menu for a subtitle, which included subtitle positioning."},
     {icon: faCircleArrowLeft, primaryText:"Traverse Selected Up", secondaryText:"Moves to the next selected subtitle up/back in the subtitle list."},
     {icon: faCircleArrowRight, primaryText:"Traverse Selected Down", secondaryText:"Moves to the next selected subtitle down/forward in the subtitle list."},
+    {icon: faCircleInfo, primaryText:"Moving to subtitles", secondaryText:"Click on the subtitle that you want to move to in the side subtitle list or in the timeline, and click play on the video player."},
 ]
 
 //json file metadata info modal data
