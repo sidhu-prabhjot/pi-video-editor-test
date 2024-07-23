@@ -36,6 +36,7 @@ const style = {
  */
 const InfoModal = ({isOpen, onCloseModal, info, header}) => {
 
+    //retrieving a list item populated with icon, title, and content
     const getInfoList = () => {
         try {
             return info.map((infoItem, index) => {

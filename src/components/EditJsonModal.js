@@ -44,7 +44,6 @@ const EditJsonModal = ({
     lastUpdatedBy,
     lastUpdatedByInput,
     note,
-    noteInput,
     handleCloseModal,
     handleLastUpdatedByChange,
     handleNoteChange,
@@ -107,13 +106,13 @@ const EditJsonModal = ({
                         </div>
                         <div className={"modal-alignment-container vertical-alignment-container"}>
                             <TextField
-                                required
-                                id="outlined-required"
-                                label="Note"
-                                size={"small"}
-                                defaultValue={`${note}`}
-                                sx={{width: "100%"}}
-                                onBlur={(event) => handleNoteChange(event)}
+                            id="outlined-basic"
+                            variant="outlined"
+                            label="Note"
+                            size={"small"}
+                            defaultValue={`${note}`}
+                            sx={{width: "100%"}}
+                            onBlur={(event) => handleNoteChange(event)}
                             />
                         </div>
                         <div className={"response-alert-container"} style={{opacity: displayResponseAlert, display: displayResponseAlert === 0 ? "none" : "flex"}}>

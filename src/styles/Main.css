@@ -27,14 +27,6 @@
     position: relative;
 }
 
-.search-bar-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: transparent;
-    margin: 4px 8px 4px 0px;
-}
-
 .MuiAutocomplete-clearIndicator {
     fill: "white";
 }
@@ -121,10 +113,6 @@
 .autoscroll-switch-text {
     margin: 0px;
     font-size: 14px;
-}
-
-#subtitle {
-    transition: opacity 0.1s;
 }
 
 /*loading styling*/

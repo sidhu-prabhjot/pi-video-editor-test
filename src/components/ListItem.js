@@ -11,7 +11,6 @@ import '../styles/Main.css';
 import '../styles/List.css';
 
 const ListItem = ({
-    darkMode,
     subtitleObject,
     currentSubtitle,
     handleStartTimeChange,
@@ -32,15 +31,14 @@ const ListItem = ({
     handleTimeVerification,
 }) => {
 
-    const [checked, setChecked] = useState(false);
     const [display, setDisplay] = useState(0);
     const [startTimeInput, setStartTimeInput] = useState(subtitleObject.start);
     const [endTimeInput, setEndTimeInput] = useState(subtitleObject.end);
 
     const onCheckboxChange = (event) => {
         event.stopPropagation();
+        //setting toEdit to the opposite of what it is currently
         subtitleObject.data.toEdit = !subtitleObject.data.toEdit;
-        setChecked(subtitleObject.data.toEdit);
     };
 
     //display loader and delete subtitle

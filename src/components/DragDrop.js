@@ -1,4 +1,5 @@
 import { FileUploader } from "react-drag-drop-files";
+
 import '../styles/DragDrop.css';
 
 const fileTypes = ["VTT", "SRT", "JSON"];

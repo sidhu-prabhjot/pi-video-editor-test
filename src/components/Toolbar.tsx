@@ -3,9 +3,7 @@ import {useState, useEffect} from 'react';
 
 
 //material UI Components
-import { styled } from '@mui/material/styles';
 import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
 
 //fontawesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -20,35 +18,13 @@ import InfoModal from '../components/InfoModal';
 //data/functions to fetch data for the info modals
 import {metaDataInfoData} from '../DataExports/InfoModalData'
 
-import {parseVTTFile, parseSRTFile, parseJSONFile, generateVtt, generateSrt} from '../processComponents/Parser';
+import {parseVTTFile, parseSRTFile, parseJSONFile, generateVtt, generateSrt, generateJson} from '../processComponents/Parser';
 
 //styles
 import '../timelineStyles/index.less';
 import '../styles/List.css';
 import '../styles/Main.css';
-import '../styles/Main_dark.css';
 import '../styles/Subtitle.css';
-
-
-///////////////////////////////////////////////////////////////////////////// data control
-
-//defines the properties of a subtitle object in the timeline
-interface SubtitleObject extends TimelineAction {
-  data: {
-    src: string;
-    name: string;
-    subtitleNumber: number;
-    alignment: string;
-    direction: string;
-    lineAlign: string;
-    linePosition: string;
-    size: number;
-    textPosition: string;
-    toEdit: boolean;
-    backgroundColor: string;
-    advancedEdit: boolean;
-  };
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////// initialization
 
@@ -95,29 +71,13 @@ const Toolbar = ({
 
   const generateJSON = (lastUpdatedByInput) => {
 
-    if(lastUpdatedByInput == null) {
+    if(lastUpdatedByInput == null || lastUpdatedByInput === "") {
       throw new Error("'last upated by' field is required!")
     }
 
-    //create a new updatedAtDate for the metadata
-    let newUpdatedAtDebate = new Date();
+    //convert subtitle data set to object consisting of sub-objects: metadata and data
+    let exportObject = generateJson(editedData, videoLink, filename, fileType, metaCreatedAt, lastUpdatedBy, metaLastUpdatedBy, note, metaNote);
 
-    console.log("before generated: lastUpdateBy = ", lastUpdatedBy, " | note = ", note);
-    let exportObject = {
-        metaData: {},
-        data: [],
-    };
-    let metaDataObject = {
-        videoSrc: videoLink,
-        filename: filename,
-        importFileType: fileType,
-        createdAt: metaCreatedAt ? metaCreatedAt : new Date(),
-        updatedAt: newUpdatedAtDebate,
-        lastUpdatedBy: lastUpdatedBy ? lastUpdatedBy : metaLastUpdatedBy,
-        note: note ? note : metaNote,
-    };
-    exportObject.metaData = metaDataObject;
-    exportObject.data = editedData;
     downloadFile(JSON.stringify(exportObject), "json");
   }
 
@@ -256,7 +216,6 @@ const Toolbar = ({
                 lastUpdatedBy={metaLastUpdatedBy}
                 lastUpdatedByInput={lastUpdatedBy}
                 note={metaNote}
-                noteInput={note}
                 handleCloseModal={closeEditJsonModal}
                 handleLastUpdatedByChange={onLastUpdatedByChange}
                 handleNoteChange={onNoteChange}

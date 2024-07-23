@@ -44,53 +44,6 @@ import '../styles/Subtitle.css';
 
 ///////////////////////////////////////////////////////////////////////////// data control
 
-const MaterialUISwitch = styled(Switch)(({ theme }) => ({
-  width: 62,
-  height: 34,
-  padding: 7,
-  '& .MuiSwitch-switchBase': {
-    margin: 1,
-    padding: 0,
-    transform: 'translateX(6px)',
-    '&.Mui-checked': {
-      color: '#fff',
-      transform: 'translateX(22px)',
-      '& .MuiSwitch-thumb:before': {
-        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="${encodeURIComponent(
-          '#fff',
-        )}" d="M4.2 2.5l-.7 1.8-1.8.7 1.8.7.7 1.8.6-1.8L6.7 5l-1.9-.7-.6-1.8zm15 8.3a6.7 6.7 0 11-6.6-6.6 5.8 5.8 0 006.6 6.6z"/></svg>')`,
-      },
-      '& + .MuiSwitch-track': {
-        opacity: 1,
-        backgroundColor: theme.palette.mode === 'dark' ? '#8796A5' : '#aab4be',
-      },
-    },
-  },
-  '& .MuiSwitch-thumb': {
-    backgroundColor: theme.palette.mode === 'dark' ? '#003892' : '#001e3c',
-    width: 32,
-    height: 32,
-    '&::before': {
-      content: "''",
-      position: 'absolute',
-      width: '100%',
-      height: '100%',
-      left: 0,
-      top: 0,
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'center',
-      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="${encodeURIComponent(
-        '#fff',
-      )}" d="M9.305 1.667V3.75h1.389V1.667h-1.39zm-4.707 1.95l-.982.982L5.09 6.072l.982-.982-1.473-1.473zm10.802 0L13.927 5.09l.982.982 1.473-1.473-.982-.982zM10 5.139a4.872 4.872 0 00-4.862 4.86A4.872 4.872 0 0010 14.862 4.872 4.872 0 0014.86 10 4.872 4.872 0 0010 5.139zm0 1.389A3.462 3.462 0 0113.471 10a3.462 3.462 0 01-3.473 3.472A3.462 3.462 0 016.527 10 3.462 3.462 0 0110 6.528zM1.665 9.305v1.39h2.083v-1.39H1.666zm14.583 0v1.39h2.084v-1.39h-2.084zM5.09 13.928L3.616 15.4l.982.982 1.473-1.473-.982-.982zm9.82 0l-.982.982 1.473 1.473.982-.982-1.473-1.473zM9.305 16.25v2.083h1.389V16.25h-1.39z"/></svg>')`,
-    },
-  },
-  '& .MuiSwitch-track': {
-    opacity: 1,
-    backgroundColor: theme.palette.mode === 'dark' ? '#8796A5' : '#aab4be',
-    borderRadius: 20 / 2,
-  },
-}));
-
 //defines the properties of a subtitle object in the timeline
 interface SubtitleObject extends TimelineAction {
   data: {
@@ -115,6 +68,16 @@ interface SubtitleData extends TimelineRow {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////// initialization
+
+/**
+ * 
+ * @param sharedData global array of Subtitle Objects that is shared to editor so subtitle data is synced across components
+ * @param sharedIdMap global object map so that ids are synced across components 
+ * @param uploadedVideoLink string video link for the player
+ * @param handleUpdateSharedData function to facilitate updating global data
+ * @param toolbarMode boolean to indicate if toolbar is present
+ * @returns 
+ */
 const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedData, toolbarMode}) => {
 
   //REFS:
@@ -162,7 +125,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //loader and diasbling class for the list
   const [displayListLoader, setDisplayListLoader] = useState(false);
   const [listDisabledClass, setListDisabledClass] = useState("");
-  const [traverseButtonDisabledClass, setTraverseButtonDisabledClass] = useState("");
 
   //response alert state management
   const [displayResponseAlert, setDisplayResponseAlert] = useState(0);
@@ -172,8 +134,8 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //////////////////////////////////////////////////////////////////////////////////// timeline and video player functions
 
   //TIMELINE
-  //timeline behaviour editing
-  const mockEffect: Record<string, TimelineEffect> = {
+  //timeline behaviour on entering and leaving a subtitle
+  const timelineBehaviour: Record<string, TimelineEffect> = {
     effect1: {
       id: 'effect1',
       name: 'effect1',
@@ -181,27 +143,32 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
         enter: ({ action }) => {
 
           let subtitleObject = action as SubtitleObject;
-          subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
 
+          subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
+          //highlight entered subtitle
           subtitleObject.data.backgroundColor = "#FCA311";
 
           setCurrentSubtitle(subtitleObject);
 
+          //increase subtitle element opacity to display it on the video player
           let currentSubtitleElement = document.getElementById("subtitle");
           if(currentSubtitleElement) {
             currentSubtitleElement.style.opacity = "100";
           }
 
-            //resync timeline and player if it gets out of hand
-            if(timelineState.current.getTime() - playerRef.current.currentTime() > 0.1 || timelineState.current.getTime() - playerRef.current.currentTime() < -0.1) {
-              timelineState.current.setTime(playerRef.current.currentTime());
-            }
+          //resync timeline and player if it gets out of hand
+          if(timelineState.current.getTime() - playerRef.current.currentTime() > 0.1 || timelineState.current.getTime() - playerRef.current.currentTime() < -0.1) {
+            timelineState.current.setTime(playerRef.current.currentTime());
+          }
 
         },
         leave: ({ action }) => {
           let subtitleObject = action as SubtitleObject;
+
+          //unhighlight subtitle
           subtitleObject.data.backgroundColor = "#E5E5E5";
           
+          //hide the current subtitle on the video player
           let currentSubtitleElement = document.getElementById("subtitle");
           if(currentSubtitleElement) {
             currentSubtitleElement.style.opacity = "0";
@@ -269,7 +236,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       startTime = Number(startTime);
       endTime = Number(endTime);
 
-      // Disable the list during the insertion process
+      // Disable the list during the insertion process to prevent user data manipulation mid-data updates
       setListDisabledClass("subtitle-list-container-disabled");
   
       // Validate input times
@@ -338,7 +305,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       throw new Error("Cannot delete the last subtitle!");
     }
     
-    // Prevent further user actions until deletion is complete
+    // Disable the list during the deletion process to prevent user data manipulation mid-data updates
     await setListDisabledClass("subtitle-list-container-disabled");
     await setDisplayListLoader(true);
     try {
@@ -392,7 +359,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     }
 
     try {
-      // Disable the list during the merge process
+      // Disable the list during the merge process to prevent user data manipulation mid-data updates
       setListDisabledClass("subtitle-list-container-disabled");
   
       let subtitleObjects = [...data[0].actions];
@@ -437,7 +404,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   const splitSubtitle = async (subtitleObject) => {
     try {
-      // Disable the list during the split process
+      // Disable the list during the split process to prevent user data manipulation mid-data updates
       setListDisabledClass("subtitle-list-container-disabled");
   
       console.log("Splitting:", subtitleObject);
@@ -538,15 +505,19 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       setData([...sharedData])
     }
 
+    //need to extend subtitle list to facilitate causing a subtitle list rerender
     if(data[0].actions.length < 10) {
-      //if there is not room to shift, then force an update
 
       console.log("working with data: ", data);
       let tempData = data;
       let extendedData = cloneDeep(data);
       let keptSubtitleNumber = subtitleObject.data.subtitleNumber;
+
+      //extended data created to facilitate row shifting to cause rerender
       extendedData[0].actions.push(...createTempSubtitleObjects());
       await setData([...extendedData]);
+
+      //now that there are enough subtitles (including temp ones), shift to rerender
       const tempExtendDataAndUpdate = async () => {
         if(shift + subtitleObject.data.subtitleNumber < data[0].actions.length) {
           await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber + shift);
@@ -555,12 +526,17 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber - shift);
           await subtitleListRef.current.scrollToRow(keptSubtitleNumber);
         }
+        //set data back to original
         await setData([...tempData]);
       }
       await tempExtendDataAndUpdate();
+
+      //return to original subtitle
       await subtitleListRef.current.scrollToRow(keptSubtitleNumber);
 
     } else {
+
+      //shift away from current subtitle and back to it to force rerender
       if(shift + subtitleObject.data.subtitleNumber < data[0].actions.length) {
         await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber + shift);
         await subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber - shift);
@@ -581,7 +557,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       subtitleObjects.map((subtitleObject, index) => {
         subtitleObject.id = `action${index}`;
         subtitleObject.data.subtitleNumber = index;
-        return subtitleObject; // Return subtitle object to ensure Promise.all works correctly
+        return subtitleObject;
       })
     );
   };
@@ -766,12 +742,10 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   //handles when a subtitle in the timeline is clicked
   const onTimelineSubtitleClick = async (subtitleObject: SubtitleObject) => {
-    currentSubtitle.data.backgroundColor = darkModeClassAppend ? "#003D5C" : "#E5E5E5";
 
-    playerRef.current.currentTime(subtitleObject.start);
     updateSubtitleNumbers(data);
-    await setTime(subtitleObject);
-    await updateSubtitleList(subtitleObject, 5);
+    //handle updating the subtitle list as a list click
+    await onSubtitleListClick(subtitleObject);
   }
 
   // Function to handle submission of video link
@@ -830,8 +804,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       }
     }
 
-    console.log("closest subtitle on edit list below current: ", data[0].actions[i], "at i: ", i);
-
+    //handle updating subtitle list like handling a subtitle list click
     await onSubtitleListClick(data[0].actions[i] as SubtitleObject);
     setCurrentSubtitle(data[0].actions[i]);
 
@@ -849,8 +822,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       }
     }
 
-    console.log("closest subtitle on edit list below current: ", data[0].actions[i], "at i: ", i);
-
+    //handle updating subtitle list like handling a subtitle list click
     await onSubtitleListClick(data[0].actions[i] as SubtitleObject);
     setCurrentSubtitle(data[0].actions[i]);
   }
@@ -1083,7 +1055,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
         {({measure, registerChild}) => (
           <div ref={registerChild} style={style}>
             <ListItem 
-              darkMode={darkModeClassAppend}
               handleMeasure={measure}
               subtitleObject={data[0].actions[index]} 
               currentSubtitle={currentSubtitle}
@@ -1196,8 +1167,8 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
             {getSelectAllButton()}
             <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div>
-              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={`selected-left-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon`} icon={faCircleArrowLeft} />
-              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={`selected-right-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon`} icon={faCircleArrowRight} />
+              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={`selected-left-click selected-traverse-button clickable-icon`} icon={faCircleArrowLeft} />
+              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={`selected-right-click selected-traverse-button clickable-icon`} icon={faCircleArrowRight} />
             </div>
           </div>
           <div className={"autoscroll-switch-container"}>
@@ -1224,7 +1195,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           autoScroll={true}
           ref={timelineState}
           editorData={data}
-          effects={mockEffect}
+          effects={timelineBehaviour}
           onChange={(data) => {
             try {
               verifySubtitleOrder(data);

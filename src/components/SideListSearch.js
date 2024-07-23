@@ -3,11 +3,7 @@ import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
 import Autocomplete from '@mui/material/Autocomplete';
 
-import '../styles/SearchBar.css';
-import '../styles/Main.css';
-import '../styles/List.css';
-import '../styles/EditAllModal.css';
-import '../styles/TextSubmit.css';
+import '../styles/SideListSearch.css';
 
 /**
  * 

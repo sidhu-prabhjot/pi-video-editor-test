@@ -12,7 +12,6 @@ import {parseVTTFile} from './processComponents/Parser';
 import './timelineStyles/index.less';
 import './styles/List.css';
 import './styles/Main.css';
-import './styles/Main_dark.css';
 import './styles/Subtitle.css';
 
 

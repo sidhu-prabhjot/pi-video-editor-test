@@ -1,7 +1,6 @@
 import React from 'react';
 import {TimelineAction} from '@xzdarcy/react-timeline-editor';
 
-import '../styles/Main.css';
 import '../styles/Subtitle.css';
 
 
