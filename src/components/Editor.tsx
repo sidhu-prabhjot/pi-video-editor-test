@@ -274,7 +274,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   
       // Validate input times
       if (startTime < 0 || endTime < 0) throw new Error("Cannot have negative time!");
-      if (endTime <= startTime) throw new Error("Start time must be before end time!");
+      if (endTime < startTime) throw new Error("Start time must be before end time!");
   
       // Handle empty content
       content = content || "no text";
@@ -818,49 +818,43 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     await updateSubtitleList(currentSubtitle);
   }
 
-  //traverse up/backward in the subtitle list to find the previous selected-for-edit subtitle
   const handleSelectedLeftClick = async () => {
 
-    setTraverseButtonDisabledClass("selected-traverse-button-disabled");
-
-    //move to previous subtitle and traverse up from there
+    // move to the next subtitle and traverse from there
     let i = currentSubtitle.data.subtitleNumber - 1;
-    while(i > 0 && data[0].actions[i].data.toEdit == false) {
-      i--;
+    currentSubtitle.data.backgroundColor = "e5e5e5";
+
+    for(i; i >= 0; i--) {
+      if(data[0].actions[i] && data[0].actions[i].data.toEdit === true) {
+        break;
+      }
     }
 
-    console.log("closest subtitle on edit list above current: ", data[0].actions[i]);
+    console.log("closest subtitle on edit list below current: ", data[0].actions[i], "at i: ", i);
 
-    //verify subtitle exists, and that it has been selected to edit
-    if(data[0].actions[i] && data[0].actions[i].data.toEdit == true) {
-      //moving to subtitle is handled as a list click
-      onSubtitleListClick(data[0].actions[i] as SubtitleObject);
-    }
-
-    setTraverseButtonDisabledClass("");
+    await onSubtitleListClick(data[0].actions[i] as SubtitleObject);
+    setCurrentSubtitle(data[0].actions[i]);
 
   }
-
-  //traverse down/forward in the subtitle list to find next selected-for-edit subtitle
+  
   const handleSelectedRightClick = async () => {
 
-    setTraverseButtonDisabledClass("selected-traverse-button-disabled");
-
-    //move to the next subtitle and traverse from there
+    // move to the next subtitle and traverse from there
     let i = currentSubtitle.data.subtitleNumber + 1;
-    while(i < data[0].actions.length && data[0].actions[i].data.toEdit == false) {
-      i++;
+    currentSubtitle.data.backgroundColor = "e5e5e5";
+
+    for(i; i < data[0].actions.length; i++) {
+      if(data[0].actions[i] && data[0].actions[i].data.toEdit === true) {
+        break;
+      }
     }
 
-    //verify subtitle exists, and that it has been selected to edit, then set it as current subtitle
-    if(data[0].actions[i] && data[0].actions[i].data.toEdit == true) {
-      //moving to subtitle is handled as a list click
-      onSubtitleListClick(data[0].actions[i] as SubtitleObject);
-    }
+    console.log("closest subtitle on edit list below current: ", data[0].actions[i], "at i: ", i);
 
-    setTraverseButtonDisabledClass("");
-
+    await onSubtitleListClick(data[0].actions[i] as SubtitleObject);
+    setCurrentSubtitle(data[0].actions[i]);
   }
+  
 
   //handle saving a file that was pulled from website and not uploaded
   const handleSaveNotUploadedData = () => {
@@ -1150,7 +1144,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           />
         </div>
       <div className="main-row-1" style={{display:"flex", flexDirection:"row", flex: "1", justifyContent:"space-evenly"}}>
-        <div className={`scroll-container${darkModeClassAppend}`}>
+        <div className={`scroll-container`}>
           <div id={"subtitle-list-container-id"} className={`subtitle-list-container ` + listDisabledClass}>
             {getDisplayListLoader()}
             <AutoSizer defaultHeight={100} defaultWidth={100}>
@@ -1189,21 +1183,21 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
             </AutoSizer>
           </div>
         </div>
-        <div className={`video-container${darkModeClassAppend}`}>     
+        <div className={`video-container`} style={{display:"flex", justifyContent: 'center'}}>     
           <div className={"video-player-container"}>
             <VideoJS options={videoJsOptions} onReady={handlePlayerReady} currentSubtitle={currentSubtitle} alignment={currentSubtitle.data.alignment} linePosition={getLinePositionValue(currentSubtitle)} />
           </div>
         </div>
       </div>
-      <div className={`player-config-row${darkModeClassAppend} timeline-editor-engine main-row-2`} style={{display: "flex"}}>
+      <div className={`player-config-row timeline-editor-engine main-row-2`} style={{display: "flex"}}>
         <div className="player-config">
           <div className={"list-edit-config-container"}>
             <SideListSearch searchBarWidth={200} handleResultClick={onSearchResultClick} dataObjects={data ? data[0].actions : []} />
             {getSelectAllButton()}
             <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div>
-              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={`selected-left-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon${darkModeClassAppend}`} icon={faCircleArrowLeft} />
-              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={`selected-right-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon${darkModeClassAppend}`} icon={faCircleArrowRight} />
+              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={`selected-left-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon`} icon={faCircleArrowLeft} />
+              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={`selected-right-click selected-traverse-button ${traverseButtonDisabledClass} clickable-icon`} icon={faCircleArrowRight} />
             </div>
           </div>
           <div className={"autoscroll-switch-container"}>

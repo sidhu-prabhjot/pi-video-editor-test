@@ -119,6 +119,7 @@ const AddSubtitleModal = ({
                                 label="New Subtitle Text"
                                 defaultValue={""}
                                 size={"small"}
+                                sx={{width: "100%"}}
                                 onBlur={(event) => {handleContentInputChange(event)}}
                             />
                         </div>
@@ -129,6 +130,7 @@ const AddSubtitleModal = ({
                                 label="Start Time"
                                 defaultValue={subtitleObject ? `${subtitleObject.end}` : ""}
                                 size={"small"}
+                                sx={{width: "100%"}}
                                 onBlur={(event) => {handleStartTimeChange(event)}}
                             />
                         </div>
@@ -139,6 +141,7 @@ const AddSubtitleModal = ({
                                 label="End Time"
                                 defaultValue={data[0].actions[subtitleObject.data.subtitleNumber + 1] ? `${data[0].actions[subtitleObject.data.subtitleNumber + 1].start}` : subtitleObject.end + 1}
                                 size={"small"}
+                                sx={{width: "100%"}}
                                 onBlur={(event) => {handleEndTimeChange(event)}}
                             />
                         </div>

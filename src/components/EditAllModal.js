@@ -14,8 +14,6 @@ import Button from '@mui/material/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 
-import '../styles/Main.css';
-import '../styles/List.css';
 import '../styles/EditAllModal.css';
 
 
@@ -137,6 +135,7 @@ const EditAllModal = ({
                             label="Vertical"
                             defaultValue={0}
                             size={"small"}
+                            sx={{width: "100%"}}
                             onBlur={(event) => handleEditAllLinePositionChange(event.target.value)}
                             />
                         </div>

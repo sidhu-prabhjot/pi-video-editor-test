@@ -3,7 +3,7 @@ import Alert from '@mui/material/Alert';
 const ResponseAlert = ({responseText, severity}) => {
 
     return (
-        <div style={{margin: "0px 8px 0px 0px"}}>
+        <div style={{margin: "4px 8px 0px 0px"}}>
             <Alert severity={severity}>
                 {responseText}
             </Alert>

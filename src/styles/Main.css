@@ -8,8 +8,7 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    overflow-y: scroll;
-    background-color: #e7e5e5;
+    overflow-y: hidden;
 }
 
 .toolbar-container {
@@ -49,6 +48,9 @@
 .response-alert-container {
     transition: opacity 0.5s;
     margin: 0px 8px 0px 0px;
+    display: flex;
+    height: 100%;
+    justify-content: center;
 }
 
 #free-solo-demo {
@@ -60,7 +62,6 @@
 }
 
 .subtitle-list-container {
-    overflow-y: hidden;
     padding: 5px 5px 0px 0px;
     height: 100%;
 }
@@ -78,7 +79,7 @@
     display: flex;
     flex-direction: column;
     height: 30vh;
-    background-color:#eae9e9;
+    background-color:#f0f0f0;
 }
 
 .player-config {
@@ -99,8 +100,8 @@
 }
 
 .selected-traverse-button-disabled {
-    pointer-events: none;
-    opacity: 50px;
+    pointer-events: none!important;
+    opacity: 50px!important;
 }
 
 .clickable-icon:hover {

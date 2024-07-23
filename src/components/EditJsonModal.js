@@ -13,9 +13,7 @@ import Button from '@mui/material/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 
-import '../styles/Main.css';
-import '../styles/List.css';
-import '../styles/EditAllModal.css';
+import '../styles/EditJsonModal.css';
 
 const style = {
     position: 'absolute',
@@ -103,6 +101,7 @@ const EditJsonModal = ({
                                 label="Last Updated By"
                                 size={"small"}
                                 defaultValue={`${lastUpdatedBy}`}
+                                sx={{width: "100%"}}
                                 onBlur={(event) => handleLastUpdatedByChange(event)}
                             />
                         </div>
@@ -113,6 +112,7 @@ const EditJsonModal = ({
                                 label="Note"
                                 size={"small"}
                                 defaultValue={`${note}`}
+                                sx={{width: "100%"}}
                                 onBlur={(event) => handleNoteChange(event)}
                             />
                         </div>

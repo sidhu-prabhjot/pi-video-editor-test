@@ -11,8 +11,6 @@ import { faCircleXmark } from '@fortawesome/free-regular-svg-icons';
 //import all data needed for info modal (includes icons)
 import '../DataExports/InfoModalData';
 
-import '../styles/Main.css';
-import '../styles/List.css';
 import '../styles/InfoModal.css';
 
 const style = {
@@ -71,13 +69,13 @@ const InfoModal = ({isOpen, onCloseModal, info, header}) => {
                 aria-describedby="modal-modal-description"
             >
                 <Box sx={style}>
-                    <div className="info-modal-container">
-                        <div className={"modal-header-container"}>
-                            <h2 className={"modal-header-heading"}>{header}</h2>
-                            <div onClick={() => onCloseModal()}>
-                                <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
-                            </div>
+                    <div className={"modal-header-container"}>
+                        <h2 className={"modal-header-heading"}>{header}</h2>
+                        <div onClick={() => onCloseModal()}>
+                            <FontAwesomeIcon className="clickable-icon" icon={faCircleXmark} />
                         </div>
+                    </div>
+                    <div className="info-modal-container">
                         <div>
                             <List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
                                 {getInfoList()}

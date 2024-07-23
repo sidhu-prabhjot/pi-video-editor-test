@@ -1,0 +1,34 @@
+.edit-selected-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0px 0px 8px 0px;
+}
+
+.modal-header-heading {
+    margin: 0px 0px 8px 0px;
+}
+
+.modal-change-alignment-container {
+    display: "flex";
+}
+
+.modal-alignment-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.modal-alignment-button-container {
+    margin-left: 6px;
+}
+
+.response-alert-container {
+    margin: 0px 0px 8px 0px;
+}

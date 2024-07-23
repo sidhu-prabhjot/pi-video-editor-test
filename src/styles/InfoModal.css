@@ -1,6 +1,14 @@
 .info-modal-container {
     display: flex;
     flex-direction: column;
-    height: 400px;
+    height: 90%;
     overflow-y: scroll;
+}
+
+.clickable-icon:hover {
+    cursor: pointer;
+}
+
+.clickable-icon {
+    height: 24px;
 }
