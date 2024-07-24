@@ -76,6 +76,7 @@ const AddSubtitleModal = ({
 
     //handle confirmation of adding subtitle
     const handleConfirmClick = async () => {
+        handleDisplayListLoader(true);
         try {
             if (!startTimeInput) {
                 startTimeInput = subtitleObject.end;

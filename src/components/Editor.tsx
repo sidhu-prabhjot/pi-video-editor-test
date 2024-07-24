@@ -18,11 +18,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleArrowLeft, faCircleArrowRight, faCircleInfo} from '@fortawesome/free-solid-svg-icons';
 
 //material UI Components
-import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Switch from '@mui/material/Switch';
 
 //custom components
 import SideListSearch from './SideListSearch';
@@ -94,8 +92,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
 
   //STATE MANAGEMENT:
-  const [darkModeClassAppend, setDarkModeClassAppend] = useState(""); //will be appended to class to change it
-
   const [currentSubtitle, setCurrentSubtitle] = useState({data: {
     name: "",
   }} as SubtitleObject);
@@ -105,9 +101,9 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //track subtitle IDs
   const [idMap, setIdMap] = useState(sharedIdMap);
 
-  //the positioning edit values entered
-  const [alignmentEdit, setAlignmentEdit] = useState(null);
-  const [lineEdit, setLineEdit] = useState(-1);
+  //the positioning edit values (default values)
+  const [alignmentEdit, setAlignmentEdit] = useState("center");
+  const [linePositionEdit, setLinePositionEdit] = useState(85);
 
   //modal opening and closing 
   const [addSubtitleModalIsOpen, setAddSubtitleModalIsOpen] = useState(false);
@@ -120,7 +116,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   const [addSubtitleEndTime, setAddSubtitleEndTime] = useState("");
 
   //used to determine the content of the select all button
-  const [displaySelectAll, setDisplaySelectAll] = useState(true);
+  const [displaySelectAllButton, setDisplaySelectAllButton] = useState(true);
 
   //loader and diasbling class for the list
   const [displayListLoader, setDisplayListLoader] = useState(false);
@@ -187,7 +183,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   };
 
   //defining video player responses to events
-  const handlePlayerReady = (player) => {
+  const handlePlayerReady = (player: any) => {
     playerRef.current = player;
 
     player.on('pause', () => {
@@ -230,11 +226,11 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   ////////////////////////////////////////////////////////////////////////////////// Editor data manipulation
 
-  const insertSubtitle = async (startTime, endTime, content, currentSubtitle) => {
+  const insertSubtitle = async (stringStartTime: string, stringEndTime: string, content: string, currentSubtitle: SubtitleObject) => {
     try {
 
-      startTime = Number(startTime);
-      endTime = Number(endTime);
+      let startTime = Number(stringStartTime);
+      let endTime = Number(stringEndTime);
 
       // Disable the list during the insertion process to prevent user data manipulation mid-data updates
       setListDisabledClass("subtitle-list-container-disabled");
@@ -291,7 +287,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   
       showResponseAlert("Successfully inserted", "success");
     } catch (error) {
-      console.error("Error inserting subtitle:", error.message);
       showResponseAlert(error.message, "error");
     } finally {
       // Re-enable the list after the insertion process
@@ -299,7 +294,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     }
   };
   
-  const deleteSubtitle = async (subtitleObject) => {
+  const deleteSubtitle = async (subtitleObject: SubtitleObject) => {
 
     if(data[0].actions.length <= 1) {
       throw new Error("Cannot delete the last subtitle!");
@@ -313,8 +308,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       // Pause the player and timeline
       playerRef.current.pause();
       timelineState.current.pause();
-  
-      console.log("Deleting:", subtitleObject);
   
       const subtitleIndex = subtitleObject.data.subtitleNumber;
       const tempData = [...data]; // Clone the data to avoid direct mutations
@@ -330,8 +323,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       if (tempData[0].actions.length > 1) {
         // Remove the subtitle from the actions array
         tempData[0].actions.splice(subtitleIndex, 1);
-  
-        console.log("Fallback subtitle:", fallbackSubtitleObject);
   
         // Reassign subtitle numbers and update the state
         await updateSubtitleNumbers(tempData);
@@ -352,8 +343,9 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     }
   };
   
-  const mergeSubtitle = async (subtitleObject) => {
+  const mergeSubtitle = async (subtitleObject: SubtitleObject) => {
     
+    //if there is only one subtitle is data set, throw error
     if(data[0].actions.length <= 1) {
       throw new Error("No other subtitles to merge with!");
     }
@@ -375,7 +367,8 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
             end: subtitleObjects[i + 1].end,
           };
           mergedSubtitles.push(mergedSubtitle);
-          i++; // Skip the next subtitle as it has been merged
+          // Skip the next subtitle as it has been merged
+          i++;
         } else {
           mergedSubtitles.push(subtitleObjects[i]);
         }
@@ -388,7 +381,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       await updateSubtitleNumbers(tempData);
       setData(tempData);
   
-      // Update the necessary subtitleObject and timings
       await updateSubtitleList(subtitleObject);
       await setTime(subtitleObject);
   
@@ -402,12 +394,10 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     }
   };
 
-  const splitSubtitle = async (subtitleObject) => {
+  const splitSubtitle = async (subtitleObject: SubtitleObject) => {
     try {
       // Disable the list during the split process to prevent user data manipulation mid-data updates
       setListDisabledClass("subtitle-list-container-disabled");
-  
-      console.log("Splitting:", subtitleObject);
   
       // Calculate the midpoint of the current subtitle's duration
       const midpoint = Math.round(((subtitleObject.end + subtitleObject.start) / 2) * 100) / 100;
@@ -427,7 +417,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
         }
       };
   
-      // Clone the existing data array
       let tempData = [...data];
       let subtitleObjects = [...tempData[0].actions];
   
@@ -437,13 +426,10 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       // Insert the new subtitle object into the array at the correct position
       subtitleObjects.splice(subtitleObject.data.subtitleNumber + 1, 0, newSubtitle);
   
-      // Update the data array with the new actions
       tempData[0].actions = subtitleObjects;
   
-      // Reassign subtitle numbers
+      // Reassign subtitle numbers in order
       await updateSubtitleNumbers(tempData);
-  
-      // Update state and other necessary operations
       setData(tempData);
       await updateSubtitleList(subtitleObject);
       await setTime(subtitleObject);
@@ -508,7 +494,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     //need to extend subtitle list to facilitate causing a subtitle list rerender
     if(data[0].actions.length < 10) {
 
-      console.log("working with data: ", data);
       let tempData = data;
       let extendedData = cloneDeep(data);
       let keptSubtitleNumber = subtitleObject.data.subtitleNumber;
@@ -549,8 +534,8 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   };
 
   //reassign each subtitle with a number in order starting from 0
-  //param data becuase this function is used to formatting temp data before updating global data
-  const updateSubtitleNumbers = async (data) => {
+  //param data because this function is used to format temp data before updating global data
+  const updateSubtitleNumbers = async (data: SubtitleData[]) => {
     const subtitleObjects = data[0].actions;
 
     await Promise.all(
@@ -566,7 +551,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   const generateUniqueIdNumber = () => {
     // Initialize a temporary ID map and log it
     let tempIdMap = { ...idMap };
-    console.log("Generating unique ID using: ", tempIdMap);
   
     // Find a unique subtitle number
     let subtitleNumber = data[0].actions.length + 1;
@@ -582,70 +566,56 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   }; 
 
   // Function to sort subtitles by their start time
-  const sortSubtitleObjects = (subtitleObjectsArray) => {
+  const sortSubtitleObjects = (subtitleObjectsArray: SubtitleObject[]) => {
     subtitleObjectsArray.sort((a, b) => a.start - b.start);
   };
 
   const verifySubtitles = () => {
-    let overlapsArray = [];
-    let isValidSubtitles = true;
-    let clonedData = cloneDeep(data);
-    let subtitleObjectsArray = clonedData[0].actions;
+    let noIssuesFound = true;
+    let tempData = cloneDeep(data);
+    let subtitleObjectsArray = tempData[0].actions;
+  
+    if (subtitleObjectsArray.length < 2) {
+      return true;
+    }
   
     // Sort subtitles initially
     sortSubtitleObjects(subtitleObjectsArray);
   
-    // Initialize subtitle numbers and background colors
+    // fix subtitle numbers so they are in order and unhighlight all list items
     subtitleObjectsArray.forEach((subtitleObject, index) => {
       subtitleObject.data.subtitleNumber = index;
       subtitleObject.data.backgroundColor = "#E5E5E5";
     });
   
+    //loop through all corrected subtitles and check for overlaps
     for (let i = 0; i < subtitleObjectsArray.length - 1; i++) {
       let current = subtitleObjectsArray[i];
       let next = subtitleObjectsArray[i + 1];
   
-      let currentElement = document.getElementById(`${current.data.subtitleNumber}-list-item-container`);
-      let nextElement = document.getElementById(`${next.data.subtitleNumber}-list-item-container`);
-  
       if (current.end > next.start) {
-        isValidSubtitles = false;
-        console.log("Overlap at:", current.end, "and", next.start);
-  
-        if (currentElement && nextElement) {
-          currentElement.style.backgroundColor = "#BF0000";
-          nextElement.style.backgroundColor = "#FF4040";
-        }
-        overlapsArray.push([next.start, current.end]);
+        noIssuesFound = false;
   
         // Adjust next.start to resolve overlap
         next.start = current.end;
-        
-        // Reinitialize loop from the adjusted subtitle
-        i = Math.max(i - 2, -1); // Ensure i does not go below -1 to avoid infinite loop
-      } else if (nextElement) {
-        nextElement.style.backgroundColor = "#E5E5E5";
+  
       }
     }
-  
-    subtitleObjectsArray[subtitleObjectsArray.length - 1].data.subtitleNumber = subtitleObjectsArray.length - 1;
-  
-    if (isValidSubtitles) {
-      console.log("Sorted actions:", subtitleObjectsArray);
-      clonedData[0].actions = subtitleObjectsArray;
-      setData(clonedData);
+
+    //set global data
+    tempData[0].actions = subtitleObjectsArray;
+    setData(tempData);
+    
+    //return true if issues were found, or false if the subtitles were fine
+    if (noIssuesFound) {
       return true;
     } else {
-      console.log("Invalid VTT, found overlapping subtitles");
-      console.log("Sorted subtitles:", subtitleObjectsArray);
-      clonedData[0].actions = subtitleObjectsArray;
-      setData(clonedData);
       return false;
     }
   };
 
   //verify ordering of subtitles
-  const verifySubtitleOrder = (data) => {
+  const verifySubtitleOrder = (data: SubtitleData[]) => {
     let subtitleObjectsArray = data[0].actions;
     let previousEndTime = 0;
     
@@ -662,37 +632,37 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //////////////////////////////////////////////////////////////////////// editing a specific subtitle
 
   //set new horizontal alignment of a subtitle
-  const onAlignmentChange = async (subtitleObject, newAlignment) => {
+  const onAlignmentChange = async (subtitleObject: SubtitleObject, newAlignment: string) => {
     subtitleObject.data.alignment = newAlignment;
     setData([...data]);
     await setTime(subtitleObject);
   };
   
   //set new vertical alignment of a subtitle
-  const onLinePositionChange = async (newLinePosition, subtitleObject) => {
+  const onLinePositionChange = async (newLinePosition, subtitleObject: SubtitleObject) => {
+
+    //auto will translate to 85% in the editor to make sure it is above player control panel
     if (newLinePosition === "auto") {
-      subtitleObject.data.linePosition = 100;
+      subtitleObject.data.linePosition = "85";
     } else if (!Number.isNaN(newLinePosition)) {
-      subtitleObject.data.linePosition = Number(newLinePosition);
+      subtitleObject.data.linePosition = newLinePosition;
     }
   
     await setTime(subtitleObject);
   };  
 
   //set horizontal alignment for edit all functionality
-  const onEditAllAlignmentChange = (newAlignment) => {
+  const onEditAllAlignmentChange = (newAlignment: string) => {
     setAlignmentEdit(newAlignment);
-
-    console.log("alignment change: ", newAlignment);
   };
 
   //set vertical alignment for edit all functionality
-  const onEditAllLinePositionChange = (newLinePosition) => {
-    setLineEdit(newLinePosition);
+  const onEditAllLinePositionChange = (newLinePosition: string) => {
+    setLinePositionEdit(Number(newLinePosition));
   };
 
   // Function to apply edits to all selected subtitles
-  const editAllSelected = async (removeAll = false) => {
+  const editAllSelectedSubtitles = async (removeAll = false) => {
     let tempData = [...data]; // Clone the data array
     let tempSubtitleObjects = tempData[0].actions;
 
@@ -705,11 +675,11 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
         }
 
         //the received line position must be a positive number between 0 and 100, or it must be the string "auto" 
-        if ((Number(lineEdit) && Number(lineEdit) > 0 && Number(lineEdit) < 101) || (typeof lineEdit === "string" && lineEdit === "auto")) {
-          if (typeof lineEdit === "string" && lineEdit === "auto") {
-            setLineEdit(100);
+        if ((Number(linePositionEdit) && Number(linePositionEdit) > 0 && Number(linePositionEdit) < 101) || (typeof linePositionEdit === "string" && linePositionEdit === "auto")) {
+          if (typeof linePositionEdit === "string" && linePositionEdit === "auto") {
+            setLinePositionEdit(85);
           }
-          subtitleObject.data.linePosition = lineEdit.toString();
+          subtitleObject.data.linePosition = linePositionEdit.toString();
         } else {
           throw new Error("invalid vertical positioning!")
         }
@@ -722,20 +692,22 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
     });
 
     setData([...tempData]);
-    if(removeAll) setDisplaySelectAll(true); //change the unselectall button to select all
+    if(removeAll) setDisplaySelectAllButton(true); //change the unselectall button to select all
   };
 
   ////////////////////////////////////////////////////////////////////handle screen clicks and actions
 
   //handles when a subtitle in the subtitle side list is clicked
-  const onSubtitleListClick = async (subtitleObject) => {
+  const onSubtitleListClick = async (subtitleObject: SubtitleObject) => {
 
     subtitleObject.data.backgroundColor = "#FCA311";
 
-    console.log("clicked subtitle: ", subtitleObject.data.subtitleNumber);
     playerRef.current.currentTime(subtitleObject.start);
 
+    //set player and timeline times to clicked subtitles
     await setTime(subtitleObject);
+
+    //rerender subtitle list
     await updateSubtitleList(subtitleObject, 5);
 
   }
@@ -749,10 +721,9 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   }
 
   // Function to handle submission of video link
-  const onVideoLinkSubmit = (videoLink) => {
+  const onVideoLinkSubmit = (videoLink: string) => {
 
     if (playerRef.current) {
-      console.log("Updating video source to:", videoLink);
       playerRef.current.src({ src: videoLink, type: 'video/mp4' });
       playerRef.current.load(); // Ensure the player reloads the new source
     } else {
@@ -761,7 +732,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   };
 
   //handle a search result click
-  const onSearchResultClick = async (subtitleObject) => {
+  const onSearchResultClick = async (subtitleObject: SubtitleObject) => {
     await setTime(subtitleObject);
     await updateSubtitleList(subtitleObject);
   }
@@ -774,7 +745,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       subtitleObject.data.toEdit = true;
     }) 
     //convert the select all button to an unselect all button
-    setDisplaySelectAll(false);
+    setDisplaySelectAllButton(false);
     setData([...tempData]);
     await updateSubtitleList(currentSubtitle);
   }
@@ -787,7 +758,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       subtitleObject.data.toEdit = false;
     }) 
     //revert unselect all button to select all
-    setDisplaySelectAll(true);
+    setDisplaySelectAllButton(true);
     setData([...tempData]);
     await updateSubtitleList(currentSubtitle);
   }
@@ -803,6 +774,11 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
         break;
       }
     }
+
+    if(data[0].actions[i] == undefined) {
+      throw new Error("no selected subtitle above");
+    }
+
 
     //handle updating subtitle list like handling a subtitle list click
     await onSubtitleListClick(data[0].actions[i] as SubtitleObject);
@@ -822,42 +798,36 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
       }
     }
 
+    if(data[0].actions[i] == undefined) {
+      throw new Error("no selected subtitle below");
+    }
+
     //handle updating subtitle list like handling a subtitle list click
     await onSubtitleListClick(data[0].actions[i] as SubtitleObject);
     setCurrentSubtitle(data[0].actions[i]);
   }
-  
 
   //handle saving a file that was pulled from website and not uploaded
   const handleSaveNotUploadedData = () => {
     console.log("handleSaveNotUploadedData triggered!");
   }
-
-  //turn dark mode on and off TO (IMPLEMENT STILL*)
-  const toggleDarkMode = () => {
-    if(darkModeClassAppend === "-dark") {
-      setDarkModeClassAppend("");
-    } else {
-      setDarkModeClassAppend("-dark");
-    }
-  }
   
   //////////////////////////////////////////////////////// component prop functions
 
   //handle subtitle content input change
-  const onSubtitleContentChange = (newContent, subtitleObject) => {
+  const onSubtitleContentChange = (newContent: string, subtitleObject: SubtitleObject) => {
     subtitleObject.data.name = newContent;
   }
 
   //handle start time input change
-  const onStartTimeChange = (newStartTime, subtitleObject) => {
+  const onStartTimeChange = (newStartTime: string, subtitleObject: SubtitleObject) => {
     if(newStartTime) {
       subtitleObject.start = Number(newStartTime);
     }
   }
 
   //handle end time input change
-  const onEndTimeChange = (newEndTime, subtitleObject) => {
+  const onEndTimeChange = (newEndTime: string, subtitleObject: SubtitleObject) => {
     if(newEndTime) {
       subtitleObject.end = Number(newEndTime);
     }
@@ -865,27 +835,27 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   //MODAL
   //handle content input change for adding subtitle modal
-  const onAddSubtitleContentChange = (event) => {
+  const onAddSubtitleContentChange = (event: any) => {
     setAddSubtitleContent(event.target.value);
   }
 
   //handle add subtitle modal start time input change
-  const onAddSubtitleStartTimeChange = (event) => {
+  const onAddSubtitleStartTimeChange = (event: any) => {
     setAddSubtitleStartTime(event.target.value);
   }
 
   //handle add subtitle modal end time input change
-  const onAddSubtitleEndTimeChange = (event) => {
+  const onAddSubtitleEndTimeChange = (event: any) => {
     setAddSubtitleEndTime(event.target.value);
   }
 
   //displays or hides the display list loader
-  const onDisplayListLoader = (displayLoader) => {
+  const onDisplayListLoader = (displayLoader: boolean) => {
     setDisplayListLoader(displayLoader);
   }
 
   //LIKELY REMOVE
-  const forceUpdate = async (subtitleObject) => {
+  const forceUpdate = async (subtitleObject: SubtitleObject) => {
     await setTime(subtitleObject);
     await updateSubtitleList(subtitleObject, 10);
   }
@@ -921,7 +891,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   ////////////////////////////////////////////////////////////////////////////////// other helper functions
 
   //get the vertical positioning value of the subtitle
-  const getLinePositionValue = (subtitleObject) => {
+  const getLinePositionValue = (subtitleObject: SubtitleObject) => {
     if(subtitleObject.data.linePosition === "auto") {
       return 100;
     } else {
@@ -930,7 +900,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   }
   
   //display an alert for a certain duration, then hide it
-  const showResponseAlert = async (responseText, severity, duration=3000) => {
+  const showResponseAlert = async (responseText: string, severity: string, duration:number=3000) => {
       setResponseAlertText(responseText);
       setResponseAlertSeverity(severity);
       setDisplayResponseAlert(100);
@@ -939,18 +909,16 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   }
 
   //pause program processes for a specific duration in milliseconds
-  const sleep = async (duration) => {
+  const sleep = async (duration: number) => {
     return new Promise(resolve => setTimeout(resolve, duration));
   }
 
   //when verifying time, need both start and end to make sure they do not overlap each other
-  const verifyTimeInputs = (startTime, endTime) => {
+  const verifyTimeInputs = (stringStartTime: string, stringEndTime: string) => {
 
     //it is possible that these values could be a string, so conversion to integer is necessary
-    startTime = Number(startTime);
-    endTime = Number(endTime);
-
-    console.log("startTime: ", startTime, " | endTime: ", endTime);
+    let startTime = Number(stringStartTime);
+    let endTime = Number(stringEndTime);
 
     if(endTime < 0 || startTime < 0) {
       throw new Error("cannot have negative time!")
@@ -990,7 +958,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   //returns element for the correct version of the select all button (could be "select all" or "unselect all")
   const getSelectAllButton = () => {
-    if(displaySelectAll) {
+    if(displaySelectAllButton) {
       return <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={async () => await selectAllForEdit()}>Select All</Button>;
     } else {
       return <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={async () => await unselectAllForEdit()}>Unselect All</Button>
@@ -1010,7 +978,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
 
   //processes that occur after the dataset of subtitles has been updated
   useEffect(() => {
-    console.log("current dataset: ", data);
     setListDisabledClass("");
     setDisplayListLoader(false);
     handleUpdateSharedData(data);
@@ -1026,7 +993,6 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //handle updates to the shared subtitle data between editor and external components
   useEffect(() => {
     if(data[0].actions.length === 0 && sharedData && sharedData[0].actions.length > 0) {
-      console.log("data set to uploaded data!");
       setData([...sharedData]);
     }
   }, [sharedData]);
@@ -1086,7 +1052,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
         isOpen={editAllModelIsOpen}
         handleCloseModal={closeEditAllModal}
         handleEditAllAlignmentChange={onEditAllAlignmentChange}
-        handleEditAllSelected={editAllSelected}
+        handleEditAllSelectedSubtitles={editAllSelectedSubtitles}
         handleEditAllLinePositionChange={onEditAllLinePositionChange}
         setParentData={updateData}
       />
@@ -1133,10 +1099,9 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
                   noRowsRenderer={() => {
                     if(data[0].actions.length === 0) {
                       return (
-                        <p>upload a vtt file to get started.</p>
+                        <p style={{padding: "10px"}}>upload a subtitle file and video link to get started.</p>
                       )
                     } else {
-                      console.log("data uploaded!!!");
                       return (
                         <Box sx={{ display: 'flex' }}>
                           <CircularProgress />
@@ -1167,8 +1132,20 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
             {getSelectAllButton()}
             <Button size={"small"} className={"edit-all-button"} variant={"contained"} onClick={() => openEditAllModal()}>Edit Selected</Button>
             <div>
-              <FontAwesomeIcon onClick={() => handleSelectedLeftClick()} className={`selected-left-click selected-traverse-button clickable-icon`} icon={faCircleArrowLeft} />
-              <FontAwesomeIcon onClick={() => handleSelectedRightClick()} className={`selected-right-click selected-traverse-button clickable-icon`} icon={faCircleArrowRight} />
+              <FontAwesomeIcon onClick={async () => {
+                try {
+                  await handleSelectedLeftClick();
+                } catch (error) {
+                  console.log(error.message);
+                }
+                }} className={`selected-left-click selected-traverse-button clickable-icon`} icon={faCircleArrowLeft} />
+              <FontAwesomeIcon onClick={async () => {
+                try {
+                  await handleSelectedRightClick();
+                } catch (error) {
+                  console.log(error.message);
+                }
+                }} className={`selected-right-click selected-traverse-button clickable-icon`} icon={faCircleArrowRight} />
             </div>
           </div>
           <div className={"autoscroll-switch-container"}>
@@ -1177,8 +1154,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
                 <ResponseAlert responseText={responseAlertText} severity={responseAlertSeverity} />
               </div>
               {getSaveButton()}
-              <FontAwesomeIcon onClick={() => openInfoModal()} className={`info-modal-button clickable-icon${darkModeClassAppend}`} icon={faCircleInfo} />
-              {/* <MaterialUISwitch sx={{ m: 0 }} defaultChecked onChange={() => toggleDarkMode()}/> */}
+              <FontAwesomeIcon onClick={() => openInfoModal()} className={`info-modal-button clickable-icon`} icon={faCircleInfo} />
             </div>
           </div>
         </div>
@@ -1198,7 +1174,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           effects={timelineBehaviour}
           onChange={(data) => {
             try {
-              verifySubtitleOrder(data);
+              verifySubtitleOrder(data as SubtitleData[]);
               setData([...data as SubtitleData[]]);
               updateSubtitleList(currentSubtitle, 5);
             } catch (error) {
@@ -1207,15 +1183,25 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           }}
           //once an action has been moved and placed
           onActionMoveEnd={() => {
-            console.log("timeline onActionMoveEnd triggered");
-            verifySubtitles();
-            updateSubtitleList(currentSubtitle, 5);
+            try {
+              let verifyResult = verifySubtitles();
+              if(verifyResult === false) {
+                throw new Error("invalid edit");
+              }
+            } catch (error) {
+              showResponseAlert(error.message, "warning");
+            }
           }}
           //once an action has been resized
           onActionResizeEnd={() => {
-            console.log("timeline onActionResizeEnd triggered");
-            verifySubtitles();
-            updateSubtitleList(currentSubtitle, 5);
+            try {
+              let verifyResult = verifySubtitles();
+              if(verifyResult === false) {
+                throw new Error("invalid edit");
+              }
+            } catch (error) {
+              showResponseAlert(error.message, "warning");
+            }
           }}
           getActionRender={(action, row) => {
             let subtitleObject = action as SubtitleObject;

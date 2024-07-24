@@ -35,7 +35,7 @@ const style = {
    * @param {function} handleCloseModal function that will close the modal
    * @param {function} handleEditAllAlignmentChange function to handle change to the select horizontal alignment
    * @param {function} handleEditAllLinePositionChange function handle change to the vertical alignment input
-   * @param {function} handleEditAllSelected function to apply the vertical and horizontal alignment to all selected subtitles
+   * @param {function} handleEditAllSelectedSubtitles function to apply the vertical and horizontal alignment to all selected subtitles
    * @param {function} setParentData function to apply edits to the subtitle data set
    * @returns 
    */
@@ -43,7 +43,7 @@ const EditAllModal = ({
     isOpen,
     handleCloseModal,
     handleEditAllAlignmentChange,
-    handleEditAllSelected,
+    handleEditAllSelectedSubtitles,
     handleEditAllLinePositionChange, 
     setParentData}) => {
 
@@ -83,7 +83,7 @@ const EditAllModal = ({
 
     const confirmEdit = async () => {
         try {
-            await handleEditAllSelected(removeAll);
+            await handleEditAllSelectedSubtitles(removeAll);
             closeModal();
         } catch (error) {
             showResponseAlert(error.message, "warning");

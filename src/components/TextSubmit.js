@@ -5,7 +5,13 @@ import Button from '@mui/material/Button';
 
 import '../styles/TextSubmit.css';
 
-const TextSubmit = ({handleSubmit, handleInputChange, submitButtonText, label, displaySubmitButton, value}) => {
+const TextSubmit = ({
+    handleSubmit,
+    handleInputChange,
+    submitButtonText,
+    label,
+    displaySubmitButton,
+    value}) => {
 
     return (
         <div className={"text-submit-container"}>

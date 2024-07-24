@@ -59,16 +59,19 @@ const Toolbar = ({
 
   ////////////////////////////////////////////////////////////////////// exporting subtitles
 
+  //create and download vtt subtitle file from subtitle dataset
   const generateVTT = () => {
     let generatedString = generateVtt(editedData);
     downloadFile(generatedString, "vtt");
   }
 
+  //create and download srt subtitle file from subtitle dataset
   const generateSRT = () => {
     let generatedString = generateSrt(editedData);
     downloadFile(generatedString, "srt");
   }
 
+  //create and download json subtitle file from subtitle dataset
   const generateJSON = (lastUpdatedByInput) => {
 
     if(lastUpdatedByInput == null || lastUpdatedByInput === "") {
@@ -154,15 +157,7 @@ const Toolbar = ({
     reader.readAsText(fileObject, 'UTF-8');
   };
 
-  const openJsonMetadataModal = () => {
-    setJsonMetadataModalIsOpen(true);
-  }
-
-  const closeJsonMetadataModal = () => {
-    setJsonMetadataModalIsOpen(false);
-  }
-
-  //display file data if filetype is JSON
+  //returns button to view JSON metadata if uploaded file is JSON
   const getJSONMetadataButton = () => {
       if(fileType === "json") {
           return <FontAwesomeIcon onClick={() => openJsonMetadataModal()} className={"info-modal-button clickable-icon"} icon={faFileLines} />
@@ -172,6 +167,7 @@ const Toolbar = ({
 
   ////////////////////////////////////////////////////////////////////handle screen clicks and actions
 
+  //handle updating state when filename input is changed
   const onFilenameInputChange = (event) => {
     setFilename(event.target.value);
   }
@@ -184,6 +180,7 @@ const Toolbar = ({
     setLastUpdatedBy(event.target.value);
   }
 
+  //handle updating state when note input is changed
   const onNoteChange = (event) => {
     console.log("note set");
     setNote(event.target.value);
@@ -197,6 +194,14 @@ const Toolbar = ({
 
   const closeEditJsonModal = () => {
     setEditJsonModalIsOpen(false);
+  }
+
+  const openJsonMetadataModal = () => {
+    setJsonMetadataModalIsOpen(true);
+  }
+
+  const closeJsonMetadataModal = () => {
+    setJsonMetadataModalIsOpen(false);
   }
 
   //////////////////////////////////////////////////////////////////////////// React hooks utilization

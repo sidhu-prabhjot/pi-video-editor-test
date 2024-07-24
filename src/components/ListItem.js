@@ -43,34 +43,38 @@ const ListItem = ({
 
     //display loader and delete subtitle
     const onHandleDeleteClick = async (event) => {
+        handleDisplayListLoader(true);
         event.stopPropagation();
         try {
             await handleDeleteSubtitle(subtitleObject);
             handleShowResponseAlert("successfully deleted", "success");
         } catch (error) {
             handleShowResponseAlert(error.message, "warning");
+            handleDisplayListLoader(false);
         }
     };
 
     //display loader and merge two subtitles
     const onHandleMergeClick = async () => {
+        handleDisplayListLoader(true);
         try {
-            handleDisplayListLoader(true);
             await handleMerge(subtitleObject);
             handleShowResponseAlert("successfully merged", "success");
         } catch(error) {
             handleShowResponseAlert(error.message, "warning");
+            handleDisplayListLoader(false);
         }
     };
 
     //display loader and split a subtitle
     const onHandleSplitClick = async () => {
+        handleDisplayListLoader(true);
         try {
-            handleDisplayListLoader(true);
             await handleSplit(subtitleObject);
             handleShowResponseAlert("successfully split", "success");
         } catch(error) {
             handleShowResponseAlert(error.message, "warning");
+            handleDisplayListLoader(false);
         }
     };
 
