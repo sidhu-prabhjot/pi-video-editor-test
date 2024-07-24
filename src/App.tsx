@@ -54,7 +54,7 @@ const App = () => {
   const [idMap, setIdMap] = useState({});
 
   //video link input field changes
-  const onVideoLinkChange = (event) => {
+  const onVideoLinkChange = (event: any) => {
     setVideoLink(event.target.value);
   }
   
@@ -65,13 +65,13 @@ const App = () => {
   }
 
   //idMap is generated **IdMap should be generated here
-  const onCreationOfIdMap = (idMap) => {
+  const onCreationOfIdMap = (idMap: object) => {
     console.log("(App.tsx) created idMap: ", idMap);
     setIdMap(idMap);
   }
 
   //update the shared data
-  const onUpdateData = (uploadedData) => {
+  const onUpdateData = (uploadedData: SubtitleData[]) => {
     console.log("(App.tsx) parsed data: ", uploadedData);
     setData([...uploadedData]);
   }

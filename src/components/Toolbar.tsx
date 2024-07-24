@@ -72,7 +72,7 @@ const Toolbar = ({
   }
 
   //create and download json subtitle file from subtitle dataset
-  const generateJSON = (lastUpdatedByInput) => {
+  const generateJSON = (lastUpdatedByInput: string) => {
 
     if(lastUpdatedByInput == null || lastUpdatedByInput === "") {
       throw new Error("'last upated by' field is required!")
@@ -85,7 +85,7 @@ const Toolbar = ({
   }
 
   //download the subtitle file (filetypes include: vtt, srt, json)
-  const downloadFile = (generatedString, fileType) => {
+  const downloadFile = (generatedString: string, fileType: string) => {
     const element = document.createElement("a");
     const file = new Blob([generatedString], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
@@ -95,7 +95,7 @@ const Toolbar = ({
   }
 
   // Function to handle a subtitle file drop in file drag-drop
-  const onSubtitleFileUpload = (fileObject) => {
+  const onSubtitleFileUpload = (fileObject: any) => {
     // Initialize a FileReader
     const reader = new FileReader();
     let tempIdMap = {};
@@ -168,20 +168,20 @@ const Toolbar = ({
   ////////////////////////////////////////////////////////////////////handle screen clicks and actions
 
   //handle updating state when filename input is changed
-  const onFilenameInputChange = (event) => {
+  const onFilenameInputChange = (event: any) => {
     setFilename(event.target.value);
   }
 
   //////////////////////////////////////////////////////// component prop functions
 
   //handling input change on edit json modal
-  const onLastUpdatedByChange = (event) => {
+  const onLastUpdatedByChange = (event: any) => {
     console.log("last update by set");
     setLastUpdatedBy(event.target.value);
   }
 
   //handle updating state when note input is changed
-  const onNoteChange = (event) => {
+  const onNoteChange = (event: any) => {
     console.log("note set");
     setNote(event.target.value);
   }
