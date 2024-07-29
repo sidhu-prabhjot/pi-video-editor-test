@@ -1,4 +1,4 @@
-import { Timeline, TimelineState, TimelineAction, TimelineEffect, TimelineRow} from '@xzdarcy/react-timeline-editor';
+import {TimelineAction, TimelineRow} from '@xzdarcy/react-timeline-editor';
 import {useState, useEffect} from 'react';
 
 
@@ -61,18 +61,15 @@ const App = () => {
   //video link input is submitted
   const onVideoLinkSubmit = () => {
     setVideoLink(videoLink);
-    console.log("(App.tsx) uploaded video link: ", videoLink);
   }
 
   //idMap is generated **IdMap should be generated here
   const onCreationOfIdMap = (idMap: object) => {
-    console.log("(App.tsx) created idMap: ", idMap);
     setIdMap(idMap);
   }
 
   //update the shared data
   const onUpdateData = (uploadedData: SubtitleData[]) => {
-    console.log("(App.tsx) parsed data: ", uploadedData);
     setData([...uploadedData]);
   }
 

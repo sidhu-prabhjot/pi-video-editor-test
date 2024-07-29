@@ -94,6 +94,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //STATE MANAGEMENT:
   const [currentSubtitle, setCurrentSubtitle] = useState({data: {
     name: "",
+    subtitleNumber: -1,
   }} as SubtitleObject);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [data, setData] = useState(sharedData);
@@ -144,7 +145,8 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           //highlight entered subtitle
           subtitleObject.data.backgroundColor = "#FCA311";
 
-          setCurrentSubtitle(subtitleObject);
+          console.log("entered subtitle: ", subtitleObject);
+          setCurrentSubtitle(cloneDeep(subtitleObject));
 
           //increase subtitle element opacity to display it on the video player
           let currentSubtitleElement = document.getElementById("subtitle");
@@ -993,7 +995,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //handle updates to the shared subtitle data between editor and external components
   useEffect(() => {
     if(data[0].actions.length === 0 && sharedData && sharedData[0].actions.length > 0) {
-      setData([...sharedData]);
+      setData(cloneDeep(sharedData));
     }
   }, [sharedData]);
 
@@ -1170,7 +1172,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           startLeft={20}
           autoScroll={true}
           ref={timelineState}
-          editorData={data}
+          editorData={sharedData}
           effects={timelineBehaviour}
           onChange={(data) => {
             try {

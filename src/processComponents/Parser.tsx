@@ -7,35 +7,35 @@ import { generateSRT } from 'subtitle-generator';
 let idRef = 0;
 
 //defines the properties of a subtitle object in the timeline
-interface CustomTimelineAction extends TimelineAction {
+interface SubtitleObject extends TimelineAction {
     data: {
-        src: string;
-        name: string;
-        subtitleNumber: number;
-        alignment: string;
-        direction: string;
-        lineAlign: string;
-        linePosition: string;
-        size: number;
-        textPosition: string;
-        toEdit: boolean;
-        backgroundColor: string;
-        advancedEdit: boolean,
+      src: string;
+      name: string;
+      subtitleNumber: number;
+      alignment: string;
+      direction: string;
+      lineAlign: string;
+      linePosition: string;
+      size: number;
+      textPosition: string;
+      toEdit: boolean;
+      backgroundColor: string;
+      advancedEdit: boolean;
     };
-}
-
-//the data structure for an entire row in the timeline
-interface SubtitleObjects extends TimelineRow {
-    actions: CustomTimelineAction[];
-}
+  }
+  
+  //the data structure for an entire row in the timeline
+  interface SubtitleData extends TimelineRow {
+    actions: SubtitleObject[];
+  }
 
 //a collection of subtitle objects parsed from subtitle file (vtt, srt, or json)
-const parsedData: SubtitleObjects[] = [
+let parsedData: SubtitleData[] = [
     {
-        id: '0',
-        actions: [],
+      id: '0',
+      actions: [],
     },
-];  
+  ];
 
 export const parseVTTFile = (fileData, idMap) => {
 
@@ -82,7 +82,7 @@ export const parseVTTFile = (fileData, idMap) => {
             throw new Error("invalid duration");
         }
 
-        let newSubtitleObject = {
+        let newSubtitleObject: SubtitleObject = {
             id: `action${idRef}`,
             start: subtitleEntry.startTime,
             end: subtitleEntry.endTime,
@@ -146,7 +146,7 @@ export const parseSRTFile = (fileData, idMap) => {
         let endTimeArray = newEndTime.split(':');
         let endTime = (+endTimeArray[0]) * 60 * 60 + (+endTimeArray[1]) * 60 + (+endTimeArray[2]); 
 
-        let newSubtitleObject = {
+        let newSubtitleObject: SubtitleObject = {
             id: `action${idRef}`,
             start: startTime,
             end: endTime,
@@ -197,7 +197,7 @@ export const parseJSONFile = (fileData) => {
 }
 
 //convert subtitle data set to vtt file format
-export const generateVtt = (data:SubtitleObjects[]) => {
+export const generateVtt = (data:SubtitleData[]) => {
     const vtt = new Vtt();
     const actions = data[0].actions;
 
@@ -213,7 +213,7 @@ export const generateVtt = (data:SubtitleObjects[]) => {
 }
 
 //convert the subtitle data set to SRT file format
-export const generateSrt = (data:SubtitleObjects[]) => {
+export const generateSrt = (data:SubtitleData[]) => {
     let formattedSubtitleData = [];
 
     //loop through each to retreive start time, end time, content
@@ -237,7 +237,7 @@ export const generateSrt = (data:SubtitleObjects[]) => {
 
 //convert the subtitle data set to JSON file format
 export const generateJson = (
-    data:SubtitleObjects[],
+    data:SubtitleData[],
     videoLink,
     filename,
     fileType,

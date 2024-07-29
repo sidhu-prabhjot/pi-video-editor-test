@@ -26,6 +26,29 @@ import '../styles/List.css';
 import '../styles/Main.css';
 import '../styles/Subtitle.css';
 
+//defines the properties of a subtitle object in the timeline
+interface SubtitleObject extends TimelineAction {
+  data: {
+    src: string;
+    name: string;
+    subtitleNumber: number;
+    alignment: string;
+    direction: string;
+    lineAlign: string;
+    linePosition: string;
+    size: number;
+    textPosition: string;
+    toEdit: boolean;
+    backgroundColor: string;
+    advancedEdit: boolean;
+  };
+}
+
+//the data structure for an entire row in the timeline
+interface SubtitleData extends TimelineRow {
+  actions: SubtitleObject[];
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////// initialization
 
 const Toolbar = ({
@@ -111,13 +134,14 @@ const Toolbar = ({
         handleUpdateSharedData([]);
 
         if (fileObject.name.includes(".vtt")) {
-          result = parseVTTFile(reader.result, tempIdMap);
+          result = parseVTTFile(reader.result, tempIdMap) as SubtitleData[];
           setFileType("vtt");
+          console.log("parse result from vtt: ", result);
           //remove file type ending and store file name 
           noFileTypeFilename = fileObject.name.replace('.vtt', '');
           setFilename(noFileTypeFilename);
         } else if (fileObject.name.includes(".srt")) {
-          result = parseSRTFile(reader.result, tempIdMap);
+          result = parseSRTFile(reader.result, tempIdMap) as SubtitleData[];
           setFileType("srt");
           //remove file type ending and store file name 
           noFileTypeFilename = fileObject.name.replace('.srt', '');
@@ -125,6 +149,7 @@ const Toolbar = ({
         } else if (fileObject.name.includes(".json")) {
           let initialResult = parseJSONFile(reader.result);
           result = initialResult.data;
+          console.log("parse result from json: ", result);
           // Set meta data
           setMetaFilename(initialResult.metaData.filename);
           setMetaVideoSrc(initialResult.metaData.videosrc);
