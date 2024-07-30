@@ -261,12 +261,10 @@ const Toolbar = ({
             />
         </div>
         <div className={"file-handling-container"}>
-          <div className={"drag-drop-container"}>
-            <DragDrop handleShowResponseAlert={() => {}} handleVideoUpload={onSubtitleFileUpload} />
-          </div>
           <div className={"autoscroll-switch-container"}>
+            <DragDrop handleShowResponseAlert={() => {}} handleVideoUpload={onSubtitleFileUpload} />
             <div>
-              <TextSubmit handleInputChange={onFilenameInputChange} handleSubmit={() => {}} submitButtonText={""} label={"File Name"} displaySubmitButton={false} value={filename}/>
+              <TextSubmit id={"outline-required-1"} handleInputChange={onFilenameInputChange} handleSubmit={() => {}} submitButtonText={""} label={"File Name"} displaySubmitButton={false} value={filename}/>
             </div>
             <div>
               <Button size={"small"} className={"button export-button"} variant={"contained"} onClick={() => generateVTT()}>Export VTT</Button>
@@ -276,7 +274,7 @@ const Toolbar = ({
             {getJSONMetadataButton()}
           </div>
         </div>
-        <TextSubmit handleInputChange={(event) => handleVideoLinkChange(event)} handleSubmit={handleVideoLinkSubmit} submitButtonText={"Insert"} label={"Video Link"} displaySubmitButton={true} value={videoLink}/>
+        <TextSubmit id={"outline-required-2"} handleInputChange={(event) => handleVideoLinkChange(event)} handleSubmit={handleVideoLinkSubmit} submitButtonText={"Insert"} label={"Video Link"} displaySubmitButton={true} value={videoLink}/>
       </div>
   );
 };

@@ -94,10 +94,17 @@ const ListItem = ({
         await forceUpdate(subtitleObject);
     }
 
-    const onListItemClick = async () => {
+    const onListItemClick = async (event) => {
         //set to non-highlight
-        currentSubtitle.data.backgroundColor = "#E5E5E5";
-        handleListClick(subtitleObject);
+
+        const changeColor = async () => {
+            currentSubtitle.data.backgroundColor = "#E5E5E5";    
+            console.log('the current subtitle: ', currentSubtitle);
+        }
+
+        await changeColor();
+        
+        await handleListClick(subtitleObject);
         await handleDisplayListLoader();
     }
 
@@ -122,8 +129,18 @@ const ListItem = ({
         handleMeasure();
     }, [subtitleObject.data.advancedEdit]);
 
+    useEffect(() => {
+        //make sure that clicked subtitle is highlighted
+        if(subtitleObject.data.subtitleNumber === currentSubtitle.data.subtitleNumber) {
+            subtitleObject.data.backgroundColor = "#FCA311";
+        } else if (subtitleObject.data.backgroundColor != "E5E5E5") {
+            //make sure that all other subtitles are unhighlighted
+            subtitleObject.data.backgroundColor = "#E5E5E5";
+        }
+    })
+
     return (
-        <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ opacity:`${subtitleObject.data.size}`, backgroundColor: subtitleObject.data.backgroundColor}} onClick={() => onListItemClick()} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
+        <div id={`${subtitleObject.data.subtitleNumber}-list-item-container`} style={{ opacity:`${subtitleObject.data.size}`, backgroundColor: subtitleObject.data.backgroundColor}} onClick={(event) => onListItemClick(event)} className="list-item-container" key={subtitleObject.data.subtitleNumber}>
             <div className="toolbar">
                 <div className="checkbox-container">
                     <p className="checkbox-text">{subtitleObject.data.subtitleNumber + 1} | Edit Select</p>

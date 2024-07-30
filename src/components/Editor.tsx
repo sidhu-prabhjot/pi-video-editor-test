@@ -142,10 +142,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           let subtitleObject = action as SubtitleObject;
 
           subtitleListRef.current.scrollToRow(subtitleObject.data.subtitleNumber);
-          //highlight entered subtitle
-          subtitleObject.data.backgroundColor = "#FCA311";
 
-          console.log("entered subtitle: ", subtitleObject);
           setCurrentSubtitle(cloneDeep(subtitleObject));
 
           //increase subtitle element opacity to display it on the video player
@@ -164,7 +161,7 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
           let subtitleObject = action as SubtitleObject;
 
           //unhighlight subtitle
-          subtitleObject.data.backgroundColor = "#E5E5E5";
+          // subtitleObject.data.backgroundColor = "#E5E5E5";
           
           //hide the current subtitle on the video player
           let currentSubtitleElement = document.getElementById("subtitle");
@@ -702,15 +699,13 @@ const Editor = ({sharedData, sharedIdMap, uploadedVideoLink, handleUpdateSharedD
   //handles when a subtitle in the subtitle side list is clicked
   const onSubtitleListClick = async (subtitleObject: SubtitleObject) => {
 
-    subtitleObject.data.backgroundColor = "#FCA311";
-
     playerRef.current.currentTime(subtitleObject.start);
+
+    //rerender subtitle list
+    await updateSubtitleList(subtitleObject, 8);
 
     //set player and timeline times to clicked subtitles
     await setTime(subtitleObject);
-
-    //rerender subtitle list
-    await updateSubtitleList(subtitleObject, 5);
 
   }
 

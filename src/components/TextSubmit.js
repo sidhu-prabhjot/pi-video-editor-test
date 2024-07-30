@@ -11,7 +11,9 @@ const TextSubmit = ({
     submitButtonText,
     label,
     displaySubmitButton,
-    value}) => {
+    value,
+    id
+}) => {
 
     return (
         <div className={"text-submit-container"}>
@@ -19,7 +21,7 @@ const TextSubmit = ({
             sx={{width: 180}}
             className={"submit-input"}
             required
-            id="outlined-required"
+            id={id}
             label={label}
             size={"small"}
             value={value}

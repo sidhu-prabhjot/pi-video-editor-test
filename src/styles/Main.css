@@ -17,6 +17,10 @@
     padding: 10px 0px 10px 0px;
 }
 
+.drag-drop-container {
+    max-width: 300px!important;
+}
+
 .file-handling-container {
     display: flex;
     flex-direction: row;
